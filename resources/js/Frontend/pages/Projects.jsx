@@ -1,11 +1,19 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, MapPin, Calendar, Search, Filter } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 
 const Projects = () => {
+  const [searchParams] = useSearchParams();
   const [filter, setFilter] = React.useState('all');
+
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam && categories.some(cat => cat.id === filterParam)) {
+      setFilter(filterParam);
+    }
+  }, [searchParams]);
 
   const categories = [
     { id: 'all', label: 'Tous les Projets' },
@@ -230,9 +238,11 @@ const Projects = () => {
             </p>
           </div>
           <div className="relative z-10 pt-4 flex justify-center">
-            <Button className="h-14 px-10 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20">
-              Contactez-Nous
-            </Button>
+            <Link to="/contact">
+              <Button className="h-14 px-10 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20">
+                Contactez-Nous
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

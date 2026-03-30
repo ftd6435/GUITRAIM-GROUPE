@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\ApiResponses;
+use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    use ApiResponses;
+    use ApiResponses, ImageUpload;
 
     public function index()
     {
@@ -31,7 +32,12 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'role' => ['required', Rule::in(['admin', 'editor'])],
+            'avatar' => 'nullable|image|max:1024',
         ]);
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+        }
 
         $validated['password'] = Hash::make($validated['password']);
 
@@ -46,7 +52,16 @@ class UserController extends Controller
             'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
             'password' => 'sometimes|string|min:8',
             'role' => ['sometimes', Rule::in(['admin', 'editor'])],
+            'avatar' => 'nullable|image|max:1024',
         ]);
+
+        if ($request->hasFile('avatar')) {
+            // Supprimer l'ancien avatar s'il existe
+            if ($user->avatar) {
+                $this->deleteImage($user->avatar, 'avatars/');
+            }
+            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+        }
 
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -61,6 +76,10 @@ class UserController extends Controller
         $userId = Auth::id();
         if ($user->id === $userId) {
             return $this->errorResponse('Vous ne pouvez pas supprimer votre propre compte', [], 403);
+        }
+
+        if ($user->avatar) {
+            $this->deleteImage($user->avatar, 'avatars/');
         }
 
         $user->delete();

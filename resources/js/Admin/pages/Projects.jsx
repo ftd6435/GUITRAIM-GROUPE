@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon, Star, StarOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon, Star, StarOff, Upload, X, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea, Select } from '../../Components/ui/Input';
+import RichTextEditor from '../../Components/ui/RichTextEditor';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
@@ -15,19 +17,25 @@ const Projects = () => {
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
-  const [formData, setFormData] = useState({ 
-    sector_id: '', 
-    title: '', 
-    location: '', 
-    year: new Date().getFullYear(), 
-    description: '', 
-    content: '', 
+  const [formData, setFormData] = useState({
+    sector_id: '',
+    title: '',
+    location: '',
+    year: new Date().getFullYear(),
+    description: '',
+    content: '',
     featured: false,
-    tag_ids: []
+    tag_ids: [],
+    is_visible: true
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const fetchData = async () => {
     try {
@@ -54,27 +62,29 @@ const Projects = () => {
   const handleOpenModal = (project = null) => {
     if (project) {
       setEditingProject(project);
-      setFormData({ 
-        sector_id: project.sector_id || '', 
-        title: project.title, 
-        location: project.location || '', 
-        year: project.year || new Date().getFullYear(), 
-        description: project.description || '', 
+      setFormData({
+        sector_id: project.sector_id || '',
+        title: project.title,
+        location: project.location || '',
+        year: project.year || new Date().getFullYear(),
+        description: project.description || '',
         content: project.content || '',
         featured: !!project.featured,
-        tag_ids: project.tags?.map(t => t.id) || []
+        tag_ids: project.tags?.map(t => t.id) || [],
+        is_visible: !!project.is_visible
       });
     } else {
       setEditingProject(null);
-      setFormData({ 
-        sector_id: sectors[0]?.id || '', 
-        title: '', 
-        location: '', 
-        year: new Date().getFullYear(), 
-        description: '', 
+      setFormData({
+        sector_id: sectors[0]?.id || '',
+        title: '',
+        location: '',
+        year: new Date().getFullYear(),
+        description: '',
         content: '',
         featured: false,
-        tag_ids: []
+        tag_ids: [],
+        is_visible: true
       });
     }
     setErrors({});
@@ -105,13 +115,32 @@ const Projects = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return;
+  const handleDeleteClick = (id) => {
+    setProjectToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/projects/${id}`);
+      await api.delete(`/projects/${projectToDelete}`);
       fetchData();
+      setIsConfirmOpen(false);
+      setProjectToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression du projet');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleVisibility = async (project) => {
+    try {
+      await api.put(`/projects/${project.id}`, { ...project, is_visible: !project.is_visible });
+      fetchData();
+    } catch (error) {
+      console.error('Échec de la mise à jour de la visibilité');
     }
   };
 
@@ -121,6 +150,46 @@ const Projects = () => {
       fetchData();
     } catch (error) {
       console.error('Échec de la mise à jour du statut du projet');
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length || !editingProject) return;
+
+    setImageUploading(true);
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images[]', file);
+    });
+
+    try {
+      await api.post(`/projects/${editingProject.id}/images`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Update the current project with the new images
+      const updatedProject = await api.get(`/projects/${editingProject.slug}`);
+      setEditingProject(updatedProject.data);
+      fetchData(); // Refresh the main list too
+    } catch (error) {
+      console.error('Échec du téléchargement des images');
+    } finally {
+      setImageUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Supprimer cette image ?')) return;
+    try {
+      await api.delete(`/projects/images/${imageId}`);
+      // Refresh project images
+      const updatedProject = await api.get(`/projects/${editingProject.slug}`);
+      setEditingProject(updatedProject.data);
+      fetchData();
+    } catch (error) {
+      console.error('Échec de la suppression de l\'image');
     }
   };
 
@@ -147,6 +216,7 @@ const Projects = () => {
             <Table>
               <THead>
                 <TR>
+                  <TH>Statut</TH>
                   <TH>Projet</TH>
                   <TH>Secteur</TH>
                   <TH>Localisation</TH>
@@ -158,6 +228,20 @@ const Projects = () => {
               <TBody>
                 {projects.map((project) => (
                   <TR key={project.id}>
+                    <TD>
+                      <button
+                        onClick={() => toggleVisibility(project)}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          project.is_visible 
+                            ? "text-green-600 bg-green-50 hover:bg-green-100" 
+                            : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
+                        )}
+                        title={project.is_visible ? "Visible sur le site" : "Masqué sur le site"}
+                      >
+                        {project.is_visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                    </TD>
                     <TD>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] overflow-hidden">
@@ -178,7 +262,7 @@ const Projects = () => {
                     <TD>{project.location || 'N/A'}</TD>
                     <TD>{project.year}</TD>
                     <TD>
-                      <button 
+                      <button
                         onClick={() => toggleFeatured(project)}
                         className={cn(
                           "transition-colors",
@@ -192,7 +276,7 @@ const Projects = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(project)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(project.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(project.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -263,13 +347,11 @@ const Projects = () => {
             rows={2}
           />
 
-          <Textarea
+          <RichTextEditor
             label="Contenu du Projet"
-            placeholder="Informations détaillées sur le projet"
             value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, content: value })}
             error={errors.content?.[0]}
-            rows={6}
           />
 
           <div>
@@ -300,18 +382,79 @@ const Projects = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input 
-              type="checkbox" 
-              id="featured" 
-              checked={formData.featured}
-              onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-              className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
-            />
-            <label htmlFor="featured" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
-              Marquer comme Projet mis en avant
-            </label>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="featured"
+                checked={formData.featured}
+                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
+              />
+              <label htmlFor="featured" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
+                Marquer comme Projet mis en avant
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_visible"
+                checked={formData.is_visible}
+                onChange={(e) => setFormData({ ...formData, is_visible: e.target.checked })}
+                className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
+              />
+              <label htmlFor="is_visible" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
+                Visible sur le site public
+              </label>
+            </div>
           </div>
+
+          {editingProject && (
+            <div className="space-y-4 pt-4 border-t border-[#E0E6ED]">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-[hsla(210,30%,20%,1)]">Images du Projet</h3>
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={imageUploading}
+                  className="gap-2"
+                >
+                  {imageUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  Ajouter des Images
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {editingProject.images?.map((image) => (
+                  <div key={image.id} className="relative group aspect-square rounded-xl overflow-hidden border border-[#E0E6ED] bg-[hsla(210,25%,98%,1)]">
+                    <img src={image.image_path} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(image.id)}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[#D64545] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#D64545]/90 shadow-lg"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+                {(!editingProject.images || editingProject.images.length === 0) && (
+                  <div className="col-span-full py-8 text-center text-[hsla(210,15%,55%,1)] border-2 border-dashed border-[#E0E6ED] rounded-xl">
+                    <ImageIcon className="mx-auto mb-2 opacity-20" size={32} />
+                    <p className="text-sm">Aucune image pour ce projet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
@@ -326,6 +469,15 @@ const Projects = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer le Projet"
+        message="Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible."
+      />
     </div>
   );
 };

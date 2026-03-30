@@ -7,6 +7,7 @@ use App\Models\Testimonial;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TestimonialController extends Controller
 {
@@ -14,7 +15,13 @@ class TestimonialController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Testimonial::latest()->get());
+        $query = Testimonial::query();
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        return $this->successResponse($query->latest()->get());
     }
 
     public function store(Request $request)
@@ -26,11 +33,16 @@ class TestimonialController extends Controller
             'content' => 'required|string',
             'rating' => 'nullable|integer|min:1|max:5',
             'image' => 'nullable|image|max:2048',
+            'avatar' => 'nullable|image|max:1024',
             'is_featured' => 'boolean',
         ]);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $this->imageUpload($request->file('image'), 'testimonials');
+        }
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
         $testimonial = Testimonial::create($validated);
@@ -48,6 +60,7 @@ class TestimonialController extends Controller
             'content' => 'sometimes|string',
             'rating' => 'nullable|integer|min:1|max:5',
             'image' => 'nullable|image|max:2048',
+            'avatar' => 'nullable|image|max:1024',
             'is_featured' => 'boolean',
         ]);
 
@@ -56,6 +69,13 @@ class TestimonialController extends Controller
                 $this->deleteImage($testimonial->image, 'testimonials/');
             }
             $validated['image'] = $this->imageUpload($request->file('image'), 'testimonials');
+        }
+
+        if ($request->hasFile('avatar')) {
+            if ($testimonial->avatar) {
+                $this->deleteImage($testimonial->avatar, 'avatars/');
+            }
+            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
         $testimonial->update($validated);
@@ -67,6 +87,9 @@ class TestimonialController extends Controller
         $testimonial = Testimonial::findOrFail($id);
         if ($testimonial->image) {
             $this->deleteImage($testimonial->image, 'testimonials/');
+        }
+        if ($testimonial->avatar) {
+            $this->deleteImage($testimonial->avatar, 'avatars/');
         }
         $testimonial->delete();
         return $this->noContentSuccessResponse('Témoignage supprimé');

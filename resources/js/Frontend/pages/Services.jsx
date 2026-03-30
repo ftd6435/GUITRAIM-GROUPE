@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { HardHat, Home as HomeIcon, Truck, Monitor, CheckCircle2, ArrowRight, Download, Mail } from 'lucide-react';
 import Button from '../../Components/ui/Button';
 import { cn } from '../../utils/utils';
@@ -190,10 +191,12 @@ const Services = () => {
                 </div>
               )}
 
-              <div className="pt-4">
-                <Button className="h-14 px-8 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-base shadow-xl shadow-[#1A3A5C]/20">
-                  {sector.cta}
-                </Button>
+              <div className="pt-4 flex">
+                <Link to={sector.id === 'construction' ? '/projets?filter=construction' : sector.id === 'immobilier' ? '/projets?filter=immobilier' : sector.id === 'transport' ? '/contact' : '/projets?filter=technologie'} className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-base shadow-xl shadow-[#1A3A5C]/20">
+                    {sector.cta}
+                  </Button>
+                </Link>
               </div>
             </div>
 
@@ -226,14 +229,16 @@ const Services = () => {
             </p>
           </div>
 
-          <div className="relative z-10 pt-4 flex flex-col sm:flex-row justify-center gap-4">
-            <Button className="h-16 px-12 rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3">
-              <Mail size={24} />
-              Demander une Consultation
-            </Button>
-            <Button variant="secondary" className="h-16 px-12 rounded-[24px] bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-bold text-lg gap-3">
-              <Download size={24} />
-              Télécharger Notre Brochure
+          <div className="relative z-10 pt-4 flex flex-col sm:flex-row justify-center gap-4 px-4 sm:px-0">
+            <Link to="/contact" className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto h-auto min-h-[4rem] py-3 px-4 sm:px-12 rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-base sm:text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3">
+                <Mail size={24} className="shrink-0" />
+                <span>Demander une Consultation</span>
+              </Button>
+            </Link>
+            <Button variant="secondary" className="w-full sm:w-auto h-auto min-h-[4rem] py-3 px-4 sm:px-12 rounded-[24px] bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-bold text-base sm:text-lg gap-3">
+              <Download size={24} className="shrink-0" />
+              <span>Télécharger Notre Brochure</span>
             </Button>
           </div>
         </div>

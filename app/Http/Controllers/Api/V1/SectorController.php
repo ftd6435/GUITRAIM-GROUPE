@@ -7,6 +7,7 @@ use App\Models\Sector;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class SectorController extends Controller
 {
@@ -14,7 +15,10 @@ class SectorController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Sector::all());
+        if (Auth::guard('sanctum')->check()) {
+            return $this->successResponse(Sector::all());
+        }
+        return $this->successResponse(Sector::where('is_visible', true)->get());
     }
 
     public function show($slug)

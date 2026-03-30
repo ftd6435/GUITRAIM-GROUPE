@@ -9,6 +9,7 @@ use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
 {
@@ -26,6 +27,10 @@ class ProjectController extends Controller
 
         if ($request->has('featured')) {
             $query->where('featured', filter_var($request->featured, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
         }
 
         return $this->successResponse($query->get());
@@ -120,7 +125,7 @@ class ProjectController extends Controller
         return $this->successResponse($uploadedImages, 'Images téléchargées avec succès');
     }
 
-    public function deleteImage($id)
+    public function destroyImage($id)
     {
         $image = ProjectImage::findOrFail($id);
         $this->deleteImage($image->image_url, 'projects/');

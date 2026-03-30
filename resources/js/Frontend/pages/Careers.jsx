@@ -1,15 +1,105 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Briefcase, Users, TrendingUp, Globe, Award,
   Lightbulb, Shield, HeartHandshake, MapPin,
-  Clock, ArrowRight, Send, FileText, Upload
+  Clock, ArrowRight, Send, FileText, Upload, Loader2,
+  X, CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../utils/utils';
+import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Input, Textarea, Select } from '../../Components/ui/Input';
+import Modal from '../../Components/ui/Modal';
+import Reveal from '../components/Reveal';
 
 const Careers = () => {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    message: '',
+    cv: null,
+    cover_letter: null,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await api.get('/jobs');
+        // Filter only open jobs
+        setJobs(response.data.filter(job => job.status === 'open'));
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const handleOpenJob = (job) => {
+    setSelectedJob(job);
+    setIsModalOpen(true);
+    setErrors({});
+  };
+
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, [field]: file }));
+    }
+  };
+
+  const handleApply = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrors({});
+
+    const data = new FormData();
+    data.append('job_id', selectedJob.id);
+    data.append('first_name', formData.first_name);
+    data.append('last_name', formData.last_name);
+    data.append('email', formData.email);
+    data.append('phone', formData.phone);
+    data.append('message', formData.message);
+    if (formData.cv) data.append('cv', formData.cv);
+    if (formData.cover_letter) data.append('cover_letter', formData.cover_letter);
+
+    try {
+      await api.post('/applications', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setIsModalOpen(false);
+      setIsSuccessModalOpen(true);
+      setFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        message: '',
+        cv: null,
+        cover_letter: null,
+      });
+    } catch (error) {
+      if (error.errors) {
+        setErrors(error.errors);
+      } else {
+        console.error('Failed to submit application:', error);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
   const benefits = [
     {
       icon: <Briefcase size={32} />,
@@ -40,7 +130,7 @@ const Careers = () => {
     { icon: <HeartHandshake size={24} />, title: 'Engagement Local', desc: 'Contribution au développement socio-économique.' }
   ];
 
-  const jobs = [
+  const jobs_data = [
     {
       title: 'Ingénieur Civil Senior',
       department: 'Construction',
@@ -152,37 +242,50 @@ const Careers = () => {
         </div>
 
         <div className="space-y-6 max-w-5xl mx-auto">
-          {jobs.map((job, index) => (
-            <div key={index} className="bg-white p-8 lg:p-10 rounded-[40px] border border-[#E0E6ED] hover:shadow-xl transition-all space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-xl lg:text-2xl font-bold text-[#1A3A5C]">{job.title}</h3>
-                    <span className="px-3 py-1 rounded-full bg-[#1A3A5C]/5 text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider">
-                      {job.department}
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-bold uppercase tracking-wider">
-                      {job.type}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm font-bold text-[hsla(210,20%,60%,1)]">
-                    <div className="flex items-center gap-1.5"><MapPin size={16} className="text-[#4A8BC2]" /> {job.location}</div>
-                  </div>
-                </div>
-                <Button className="bg-[#1A3A5C] text-white rounded-2xl px-8 h-12 font-bold whitespace-nowrap">
-                  Voir l'Offre et Postuler
-                </Button>
-              </div>
-              <p className="text-base font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">{job.desc}</p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                {job.tags.map((tag, idx) => (
-                  <span key={idx} className="px-3 py-1 rounded-lg bg-[hsla(210,25%,98%,1)] border border-[#E0E6ED] text-[10px] font-bold text-[hsla(210,20%,60%,1)] uppercase tracking-wider">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          {loading ? (
+            <div className="flex items-center justify-center p-24">
+              <Loader2 className="animate-spin text-[#1A3A5C]" size={40} />
             </div>
-          ))}
+          ) : jobs.length > 0 ? (
+            jobs.map((job, index) => (
+              <Reveal key={job.id} delay={index * 100} direction="up">
+                <div className="bg-white p-8 lg:p-10 rounded-[40px] border border-[#E0E6ED] hover:shadow-xl transition-all space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="text-xl lg:text-2xl font-bold text-[#1A3A5C]">{job.title}</h3>
+                        <span className="px-3 py-1 rounded-full bg-[#1A3A5C]/5 text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider">
+                          {job.department || 'Général'}
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-bold uppercase tracking-wider">
+                          {job.type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm font-bold text-[hsla(210,20%,60%,1)]">
+                        <div className="flex items-center gap-1.5"><MapPin size={16} className="text-[#4A8BC2]" /> {job.location}</div>
+                        {job.salary_range && (
+                          <div className="flex items-center gap-1.5"><Clock size={16} className="text-[#4A8BC2]" /> {job.salary_range}</div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => handleOpenJob(job)}
+                      className="bg-[#1A3A5C] text-white rounded-2xl px-8 h-12 font-bold whitespace-nowrap"
+                    >
+                      Voir l'Offre et Postuler
+                    </Button>
+                  </div>
+                  <p className="text-base font-medium text-[hsla(210,20%,40%,1)] leading-relaxed line-clamp-2">{job.description}</p>
+                </div>
+              </Reveal>
+            ))
+          ) : (
+            <div className="text-center py-24 bg-white rounded-[40px] border border-[#E0E6ED]">
+              <Briefcase size={48} className="mx-auto text-[hsla(210,15%,55%,1)] mb-4 opacity-20" />
+              <p className="text-xl font-bold text-[#1A3A5C]">Aucun poste ouvert pour le moment</p>
+              <p className="text-[hsla(210,20%,40%,1)]">Revenez bientôt ou envoyez-nous une candidature spontanée.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -263,6 +366,206 @@ const Careers = () => {
           </form>
         </div>
       </section>
+
+      {/* Modals */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={selectedJob?.title}
+        className="max-w-4xl"
+      >
+        <div className="space-y-8 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-[#1A3A5C] flex items-center gap-2">
+                  <FileText size={20} className="text-[#4A8BC2]" />
+                  Description du Poste
+                </h3>
+                <p className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+                  {selectedJob?.description}
+                </p>
+              </div>
+
+              {selectedJob?.requirements && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-[#1A3A5C] flex items-center gap-2">
+                    <Award size={20} className="text-[#4A8BC2]" />
+                    Exigences & Compétences
+                  </h3>
+                  <div
+                    className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed prose prose-sm max-w-none ql-editor p-0"
+                    dangerouslySetInnerHTML={{ __html: selectedJob.requirements }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-[hsla(210,25%,98%,1)] p-6 rounded-3xl border border-[#E0E6ED] space-y-4">
+                <h4 className="font-bold text-[#1A3A5C]">Détails</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                    <MapPin size={16} className="text-[#4A8BC2]" />
+                    {selectedJob?.location}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                    <Clock size={16} className="text-[#4A8BC2]" />
+                    {selectedJob?.type}
+                  </div>
+                  {selectedJob?.salary_range && (
+                    <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                      <TrendingUp size={16} className="text-[#4A8BC2]" />
+                      {selectedJob?.salary_range}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-[#E0E6ED] space-y-8">
+            <h3 className="text-2xl font-bold text-[#1A3A5C] text-center">Postuler à cette offre</h3>
+
+            <form onSubmit={handleApply} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  label="Prénom *"
+                  placeholder="votre prénom"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  error={errors.first_name?.[0]}
+                  required
+                />
+                <Input
+                  label="Nom *"
+                  placeholder="votre nom"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  error={errors.last_name?.[0]}
+                  required
+                />
+                <Input
+                  label="Email *"
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  error={errors.email?.[0]}
+                  required
+                />
+                <Input
+                  label="Téléphone *"
+                  placeholder="+224 xx xx xx xx"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  error={errors.phone?.[0]}
+                  required
+                />
+              </div>
+
+              <Textarea
+                label="Message / Motivation (optionnel)"
+                placeholder="Pourquoi souhaitez-vous nous rejoindre ?"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                error={errors.message?.[0]}
+                className="min-h-[120px]"
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                    CV (PDF, max 5MB) *
+                    {formData.cv && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      onChange={(e) => handleFileChange(e, 'cv')}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      accept=".pdf"
+                      required
+                    />
+                    <div className={cn(
+                      "h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
+                      formData.cv ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] group-hover:border-[#1A3A5C]"
+                    )}>
+                      {formData.cv ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                      <span className="text-sm font-bold truncate">
+                        {formData.cv ? formData.cv.name : "Choisir un CV"}
+                      </span>
+                    </div>
+                  </div>
+                  {errors.cv && <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cv[0]}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                    Lettre de Motivation (optionnel)
+                    {formData.cover_letter && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      onChange={(e) => handleFileChange(e, 'cover_letter')}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      accept=".pdf"
+                    />
+                    <div className={cn(
+                      "h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
+                      formData.cover_letter ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] group-hover:border-[#1A3A5C]"
+                    )}>
+                      {formData.cover_letter ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                      <span className="text-sm font-bold truncate">
+                        {formData.cover_letter ? formData.cover_letter.name : "Choisir un fichier"}
+                      </span>
+                    </div>
+                  </div>
+                  {errors.cover_letter && <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cover_letter[0]}</p>}
+                </div>
+              </div>
+
+              <div className="pt-6 flex justify-center">
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="h-16 px-16 rounded-[24px] bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20 gap-3"
+                >
+                  {submitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                  Envoyer ma Candidature
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Candidature Envoyée !"
+        className="max-w-md"
+      >
+        <div className="py-8 text-center space-y-6">
+          <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 size={40} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-bold text-[#1A3A5C]">Merci pour votre intérêt !</p>
+            <p className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+              Votre candidature a été transmise à notre équipe RH. Nous reviendrons vers vous dans les plus brefs délais.
+            </p>
+          </div>
+          <Button
+            onClick={() => setIsSuccessModalOpen(false)}
+            className="w-full bg-[#1A3A5C] text-white h-12 rounded-xl font-bold"
+          >
+            Fermer
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

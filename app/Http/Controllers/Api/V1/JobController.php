@@ -7,6 +7,7 @@ use App\Models\JobOffer;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class JobController extends Controller
 {
@@ -14,7 +15,13 @@ class JobController extends Controller
 
     public function index()
     {
-        return $this->successResponse(JobOffer::with('sector')->latest()->get());
+        $query = JobOffer::with('sector');
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        return $this->successResponse($query->latest()->get());
     }
 
     public function show($id)

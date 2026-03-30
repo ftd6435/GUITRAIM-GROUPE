@@ -50,7 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::put('projects/{id}', [ProjectController::class, 'update']);
         Route::delete('projects/{id}', [ProjectController::class, 'destroy']);
         Route::post('projects/{id}/images', [ProjectController::class, 'uploadImages']);
-        Route::delete('projects/images/{id}', [ProjectController::class, 'deleteImage']);
+        Route::delete('projects/images/{id}', [ProjectController::class, 'destroyImage']);
 
         // Blog (CRUD)
         Route::post('blog', [BlogController::class, 'store']);

@@ -8,6 +8,7 @@ use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ServiceController extends Controller
 {
@@ -21,6 +22,10 @@ class ServiceController extends Controller
             $query->whereHas('sector', function ($q) use ($request) {
                 $q->where('slug', $request->sector);
             });
+        }
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
         }
 
         return $this->successResponse($query->get());

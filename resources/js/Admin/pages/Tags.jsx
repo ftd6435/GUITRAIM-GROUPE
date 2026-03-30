@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
 
@@ -11,9 +12,12 @@ const Tags = () => {
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState(null);
   const [formData, setFormData] = useState({ name: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchTags = async () => {
     try {
@@ -56,13 +60,23 @@ const Tags = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette étiquette ?')) return;
+  const handleDeleteClick = (id) => {
+    setTagToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!tagToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/tags/${id}`);
+      await api.delete(`/tags/${tagToDelete}`);
       fetchTags();
+      setIsConfirmOpen(false);
+      setTagToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression de l\'étiquette');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -103,7 +117,7 @@ const Tags = () => {
                       </div>
                     </TD>
                     <TD className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(tag.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(tag.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -149,6 +163,15 @@ const Tags = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer le Tag"
+        message="Êtes-vous sûr de vouloir supprimer ce tag ? Il sera retiré de tous les articles et projets associés."
+      />
     </div>
   );
 };

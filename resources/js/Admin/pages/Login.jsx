@@ -1,33 +1,59 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import Cookies from 'js-cookie';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Input } from '../../Components/ui/Input';
 import { Card, CardHeader, CardContent } from '../../Components/ui/Card';
 
+const loginSchema = z.object({
+  email: z.string().min(1, 'L\'email est requis').email('Email invalide'),
+  password: z.string().min(6, 'Le mot de passe doit faire au moins 6 caractères'),
+});
+
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.post('/auth/login', formData);
+      const response = await api.post('/auth/login', data);
       if (response.token) {
-        localStorage.setItem('auth_token', response.token);
+        // Sécurisation avec Cookie (Expires in 7 days, Secure if HTTPS)
+        Cookies.set('auth_token', response.token, {
+          expires: 7,
+          secure: window.location.protocol === 'https:',
+          sameSite: 'strict'
+        });
+
         localStorage.setItem('user', JSON.stringify(response.data));
+
         // Set authorization header for future requests
         api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
         navigate('/admin');
       }
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+      setError(err.message || 'Identifiants invalides. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -47,7 +73,7 @@ const Login = () => {
             className="text-center"
           />
           <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {error && (
                 <div className="bg-[#FDEAEA] border border-[#D64545]/20 text-[#D64545] p-4 rounded-xl flex items-center gap-3 text-sm font-medium animate-in fade-in duration-200">
                   <AlertCircle size={18} />
@@ -63,9 +89,8 @@ const Login = () => {
                     type="email"
                     placeholder="admin@example.com"
                     className="pl-11"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    {...register('email')}
+                    error={errors.email?.message}
                   />
                 </div>
 
@@ -76,9 +101,8 @@ const Login = () => {
                     type="password"
                     placeholder="••••••••"
                     className="pl-11"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
+                    {...register('password')}
+                    error={errors.password?.message}
                   />
                 </div>
               </div>

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
-    protected $fillable = ['sector_id', 'title', 'slug', 'location', 'year', 'description', 'content', 'featured'];
+    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'location', 'year', 'description', 'content', 'featured'];
 
     public function sector()
     {

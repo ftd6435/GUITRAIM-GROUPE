@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
 
@@ -15,6 +16,9 @@ const Categories = () => {
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchCategories = async () => {
     try {
@@ -68,13 +72,23 @@ const Categories = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) return;
+  const handleDeleteClick = (id) => {
+    setCategoryToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/categories/${id}`);
+      await api.delete(`/categories/${categoryToDelete}`);
       fetchCategories();
+      setIsConfirmOpen(false);
+      setCategoryToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression de la catégorie');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -115,7 +129,7 @@ const Categories = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(category)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(category.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -169,6 +183,15 @@ const Categories = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer la Catégorie"
+        message="Êtes-vous sûr de vouloir supprimer cette catégorie ? Les articles associés ne seront pas supprimés mais pourraient perdre leur catégorie."
+      />
     </div>
   );
 };

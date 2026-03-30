@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import Reveal from '../components/Reveal';
+import Counter from '../components/Counter';
 
 const About = () => {
   const values = [
@@ -41,9 +42,9 @@ const About = () => {
       {/* Header Section */}
       <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop" 
-            alt="À Propos de GUITRAIM GROUPE" 
+          <img
+            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop"
+            alt="À Propos de GUITRAIM GROUPE"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-[#1A3A5C]/80 backdrop-blur-sm" />
@@ -162,7 +163,9 @@ const About = () => {
           {stats.map((stat, index) => (
             <Reveal key={index} delay={index * 100} direction="down">
               <div className="bg-white p-8 rounded-[32px] border border-[#E0E6ED] text-center space-y-2 hover:shadow-lg transition-all h-full">
-                <div className="text-4xl lg:text-5xl font-black text-[#1A3A5C]">{stat.value}</div>
+                <div className="text-4xl lg:text-5xl font-black text-[#1A3A5C]">
+                  <Counter value={stat.value} duration={2500} />
+                </div>
                 <div className="text-lg font-bold text-[hsla(210,20%,40%,1)]">{stat.label}</div>
                 <div className="text-sm font-medium text-[hsla(210,20%,60%,1)] uppercase tracking-widest">{stat.sublabel}</div>
               </div>

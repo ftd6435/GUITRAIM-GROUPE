@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Star } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Pencil, Trash2, Loader2, Star, User, Upload, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
+import { cn } from '../../utils/utils';
 
 const Testimonials = () => {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [testimonialToDelete, setTestimonialToDelete] = useState(null);
   const [editingTestimonial, setEditingTestimonial] = useState(null);
-  const [formData, setFormData] = useState({ client_name: '', client_company: '', content: '', rating: 5 });
+  const [formData, setFormData] = useState({ name: '', company: '', content: '', rating: 5, avatar: null, is_visible: true });
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const fetchTestimonials = async () => {
     try {
@@ -36,14 +43,18 @@ const Testimonials = () => {
     if (testimonial) {
       setEditingTestimonial(testimonial);
       setFormData({
-        client_name: testimonial.client_name,
-        client_company: testimonial.client_company || '',
+        name: testimonial.name,
+        company: testimonial.company || '',
         content: testimonial.content,
-        rating: testimonial.rating || 5
+        rating: testimonial.rating || 5,
+        avatar: null,
+        is_visible: !!testimonial.is_visible
       });
+      setPreviewUrl(testimonial.avatar ? `/storage/images/avatars/${testimonial.avatar}` : null);
     } else {
       setEditingTestimonial(null);
-      setFormData({ client_name: '', client_company: '', content: '', rating: 5 });
+      setFormData({ name: '', company: '', content: '', rating: 5, avatar: null, is_visible: true });
+      setPreviewUrl(null);
     }
     setErrors({});
     setIsModalOpen(true);
@@ -54,15 +65,42 @@ const Testimonials = () => {
     setEditingTestimonial(null);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, avatar: file });
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setErrors({});
+
+    const data = new FormData();
+    data.append('name', formData.name);
+    data.append('company', formData.company);
+    data.append('content', formData.content);
+    data.append('rating', formData.rating);
+    data.append('is_visible', formData.is_visible ? 1 : 0);
+    if (formData.avatar) {
+      data.append('avatar', formData.avatar);
+    }
+
+    if (editingTestimonial) {
+      data.append('_method', 'PUT');
+    }
+
     try {
       if (editingTestimonial) {
-        await api.put(`/testimonials/${editingTestimonial.id}`, formData);
+        await api.post(`/testimonials/${editingTestimonial.id}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        await api.post('/testimonials', formData);
+        await api.post('/testimonials', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
       fetchTestimonials();
       handleCloseModal();
@@ -73,13 +111,32 @@ const Testimonials = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce témoignage ?')) return;
+  const handleDeleteClick = (id) => {
+    setTestimonialToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!testimonialToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/testimonials/${id}`);
+      await api.delete(`/testimonials/${testimonialToDelete}`);
       fetchTestimonials();
+      setIsConfirmOpen(false);
+      setTestimonialToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression du témoignage');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleVisibility = async (testimonial) => {
+    try {
+      await api.put(`/testimonials/${testimonial.id}`, { ...testimonial, is_visible: !testimonial.is_visible });
+      fetchTestimonials();
+    } catch (error) {
+      console.error('Échec de la mise à jour de la visibilité');
     }
   };
 
@@ -106,6 +163,7 @@ const Testimonials = () => {
             <Table>
               <THead>
                 <TR>
+                  <TH>Statut</TH>
                   <TH>Client</TH>
                   <TH>Entreprise</TH>
                   <TH>Note</TH>
@@ -115,8 +173,33 @@ const Testimonials = () => {
               <TBody>
                 {testimonials.map((testimonial) => (
                   <TR key={testimonial.id}>
-                    <TD className="font-semibold text-[hsla(210,30%,20%,1)]">{testimonial.client_name}</TD>
-                    <TD>{testimonial.client_company || 'N/A'}</TD>
+                    <TD>
+                      <button
+                        onClick={() => toggleVisibility(testimonial)}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          testimonial.is_visible
+                            ? "text-green-600 bg-green-50 hover:bg-green-100"
+                            : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
+                        )}
+                        title={testimonial.is_visible ? "Visible sur le site" : "Masqué sur le site"}
+                      >
+                        {testimonial.is_visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                    </TD>
+                    <TD>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] overflow-hidden">
+                          {testimonial.avatar ? (
+                            <img src={`/storage/images/avatars/${testimonial.avatar}`} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="text-[hsla(210,15%,55%,1)]" size={20} />
+                          )}
+                        </div>
+                        <span className="font-semibold text-[hsla(210,30%,20%,1)]">{testimonial.name}</span>
+                       </div>
+                     </TD>
+                     <TD>{testimonial.company || 'N/A'}</TD>
                     <TD>
                       <div className="flex items-center gap-1 text-[#F5A623]">
                         {Array.from({ length: 5 }).map((_, i) => (
@@ -128,7 +211,7 @@ const Testimonials = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(testimonial)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(testimonial.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(testimonial.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -153,20 +236,46 @@ const Testimonials = () => {
         title={editingTestimonial ? 'Modifier le Témoignage' : 'Ajouter un Témoignage'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="w-24 h-24 rounded-full border-2 border-dashed border-[#E0E6ED] flex items-center justify-center overflow-hidden bg-[hsla(210,25%,98%,1)] relative group">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <User size={32} className="text-[hsla(210,15%,55%,1)]" />
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Upload size={20} />
+              </button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*"
+            />
+            <p className="text-xs font-medium text-[hsla(210,20%,40%,1)]">Cliquez pour changer l'avatar</p>
+            {errors.avatar && <p className="text-xs font-medium text-[#D64545]">{errors.avatar[0]}</p>}
+          </div>
+
           <Input
             label="Nom du Client"
             placeholder="ex: Jeanne Dupont"
-            value={formData.client_name}
-            onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-            error={errors.client_name?.[0]}
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            error={errors.name?.[0]}
             required
           />
           <Input
             label="Entreprise"
             placeholder="ex: Tech Corp"
-            value={formData.client_company}
-            onChange={(e) => setFormData({ ...formData, client_company: e.target.value })}
-            error={errors.client_company?.[0]}
+            value={formData.company}
+            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+            error={errors.company?.[0]}
           />
           <Input
             label="Note (1-5)"
@@ -183,9 +292,23 @@ const Testimonials = () => {
             value={formData.content}
             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
             error={errors.content?.[0]}
-            rows={5}
+            rows={4}
             required
           />
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="is_visible"
+              checked={formData.is_visible}
+              onChange={(e) => setFormData({ ...formData, is_visible: e.target.checked })}
+              className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
+            />
+            <label htmlFor="is_visible" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
+              Visible sur le site public
+            </label>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
               Annuler
@@ -199,6 +322,15 @@ const Testimonials = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer le Témoignage"
+        message="Êtes-vous sûr de vouloir supprimer ce témoignage ?"
+      />
     </div>
   );
 };

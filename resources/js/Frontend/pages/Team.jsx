@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import { Link as LinkIcon, Mail, ArrowRight, HardHat, Home as HomeIcon, Truck, Monitor } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
@@ -157,10 +157,12 @@ const Team = () => {
             </p>
           </div>
           <div className="relative z-10 pt-4 flex justify-center">
-            <Button className="h-14 px-10 rounded-2xl bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-xl shadow-[#4A8BC2]/20 gap-3">
-              <Mail size={20} />
-              Contactez Notre Équipe
-            </Button>
+            <Link to="/contact">
+              <Button className="h-14 px-10 rounded-2xl bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-xl shadow-[#4A8BC2]/20 gap-3">
+                <Mail size={20} />
+                Contactez Notre Équipe
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

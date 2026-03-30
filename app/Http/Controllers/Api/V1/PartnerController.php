@@ -7,6 +7,7 @@ use App\Models\Partner;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PartnerController extends Controller
 {
@@ -14,7 +15,13 @@ class PartnerController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Partner::all());
+        $query = Partner::query();
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        return $this->successResponse($query->get());
     }
 
     public function store(Request $request)

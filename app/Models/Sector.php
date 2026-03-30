@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sector extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'icon'];
+    protected $fillable = ['is_visible', 'name', 'slug', 'description', 'icon'];
 
     public function services()
     {

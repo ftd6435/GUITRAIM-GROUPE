@@ -83,12 +83,16 @@ const Home = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button className="h-14 px-10 rounded-2xl bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-xl shadow-[#4A8BC2]/20">
-              Découvrir Nos Services
-            </Button>
-            <Button variant="secondary" className="h-14 px-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-bold text-lg">
-              Voir Nos Projets
-            </Button>
+            <Link to="/services">
+              <Button className="h-14 px-10 rounded-2xl bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-xl shadow-[#4A8BC2]/20">
+                Découvrir Nos Services
+              </Button>
+            </Link>
+            <Link to="/projets">
+              <Button variant="secondary" className="h-14 px-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-bold text-lg">
+                Voir Nos Projets
+              </Button>
+            </Link>
           </div>
         </Reveal>
       </section>
@@ -160,9 +164,11 @@ const Home = () => {
         </div>
 
         <div className="text-center">
-          <Button variant="secondary" className="h-14 px-10 rounded-2xl border-[#E0E6ED] text-[#1A3A5C] font-bold text-lg hover:bg-[hsla(210,25%,98%,1)]">
-            Voir Tous Nos Projets
-          </Button>
+          <Link to="/projets">
+            <Button variant="secondary" className="h-14 px-10 rounded-2xl border-[#E0E6ED] text-[#1A3A5C] font-bold text-lg hover:bg-[hsla(210,25%,98%,1)]">
+              Voir Tous Nos Projets
+            </Button>
+          </Link>
         </div>
       </Reveal>
 
@@ -183,10 +189,12 @@ const Home = () => {
           </div>
 
           <div className="relative z-10 pt-4 flex justify-center">
-            <Button className="h-16 px-12 rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3">
-              <Mail size={24} />
-              Contactez-Nous Maintenant
-            </Button>
+            <Link to="/contact">
+              <Button className="h-16 px-12 rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3">
+                <Mail size={24} />
+                Contactez-Nous Maintenant
+              </Button>
+            </Link>
           </div>
         </div>
       </Reveal>

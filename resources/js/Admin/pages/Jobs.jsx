@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Briefcase, Calendar, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Briefcase, Calendar, MapPin, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea, Select } from '../../Components/ui/Input';
+import RichTextEditor from '../../Components/ui/RichTextEditor';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
@@ -13,6 +15,8 @@ const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -21,10 +25,12 @@ const Jobs = () => {
     salary_range: '',
     description: '',
     requirements: '',
-    status: 'open'
+    status: 'open',
+    is_visible: true
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchJobs = async () => {
     try {
@@ -52,7 +58,8 @@ const Jobs = () => {
         salary_range: job.salary_range || '',
         description: job.description || '',
         requirements: job.requirements || '',
-        status: job.status || 'open'
+        status: job.status || 'open',
+        is_visible: !!job.is_visible
       });
     } else {
       setEditingJob(null);
@@ -63,7 +70,8 @@ const Jobs = () => {
         salary_range: '',
         description: '',
         requirements: '',
-        status: 'open'
+        status: 'open',
+        is_visible: true
       });
     }
     setErrors({});
@@ -94,13 +102,32 @@ const Jobs = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette offre d\'emploi ?')) return;
+  const handleDeleteClick = (id) => {
+    setJobToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/jobs/${id}`);
+      await api.delete(`/jobs/${jobToDelete}`);
       fetchJobs();
+      setIsConfirmOpen(false);
+      setJobToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleVisibility = async (job) => {
+    try {
+      await api.put(`/jobs/${job.id}`, { ...job, is_visible: !job.is_visible });
+      fetchJobs();
+    } catch (error) {
+      console.error('Échec de la mise à jour de la visibilité');
     }
   };
 
@@ -134,16 +161,31 @@ const Jobs = () => {
             <Table>
               <THead>
                 <TR>
+                  <TH>Statut</TH>
                   <TH>Titre du Poste</TH>
                   <TH>Type</TH>
                   <TH>Localisation</TH>
-                  <TH>Statut</TH>
+                  <TH>État</TH>
                   <TH className="text-right">Actions</TH>
                 </TR>
               </THead>
               <TBody>
                 {jobs.map((job) => (
                   <TR key={job.id}>
+                    <TD>
+                      <button
+                        onClick={() => toggleVisibility(job)}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          job.is_visible 
+                            ? "text-green-600 bg-green-50 hover:bg-green-100" 
+                            : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
+                        )}
+                        title={job.is_visible ? "Visible sur le site" : "Masqué sur le site"}
+                      >
+                        {job.is_visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                    </TD>
                     <TD className="font-semibold text-[hsla(210,30%,20%,1)]">{job.title}</TD>
                     <TD>
                       <span className="px-2 py-1 rounded-full bg-[#4A8BC2]/10 text-[#1A3A5C] text-xs font-bold">
@@ -168,7 +210,7 @@ const Jobs = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(job)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(job.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(job.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -240,25 +282,23 @@ const Jobs = () => {
             required
           />
 
-          <Textarea
+          <RichTextEditor
             label="Exigences"
-            placeholder="Liste des exigences (une par ligne)"
             value={formData.requirements}
-            onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, requirements: value })}
             error={errors.requirements?.[0]}
-            rows={5}
           />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             <input
               type="checkbox"
-              id="job-status"
-              checked={formData.status === 'open'}
-              onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'open' : 'closed' })}
+              id="is_visible"
+              checked={formData.is_visible}
+              onChange={(e) => setFormData({ ...formData, is_visible: e.target.checked })}
               className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
             />
-            <label htmlFor="job-status" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
-              Marquer comme Ouvert (visible par le public)
+            <label htmlFor="is_visible" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
+              Visible sur le site public
             </label>
           </div>
 
@@ -275,6 +315,15 @@ const Jobs = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer l'Offre d'Emploi"
+        message="Êtes-vous sûr de vouloir supprimer cette offre d'emploi ?"
+      />
     </div>
   );
 };

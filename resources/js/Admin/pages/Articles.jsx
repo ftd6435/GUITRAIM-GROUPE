@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon, Search, Upload, X, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea, Select } from '../../Components/ui/Input';
+import RichTextEditor from '../../Components/ui/RichTextEditor';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
@@ -15,6 +17,8 @@ const Articles = () => {
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState(null);
   const [editingArticle, setEditingArticle] = useState(null);
   const [formData, setFormData] = useState({
     category_id: '',
@@ -22,10 +26,14 @@ const Articles = () => {
     summary: '',
     content: '',
     published: true,
-    tag_ids: []
+    tag_ids: [],
+    image: null
   });
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const fetchData = async () => {
     try {
@@ -58,8 +66,10 @@ const Articles = () => {
         summary: article.summary || '',
         content: article.content || '',
         published: !!article.published,
-        tag_ids: article.tags?.map(t => t.id) || []
+        tag_ids: article.tags?.map(t => t.id) || [],
+        image: null
       });
+      setPreviewUrl(article.image_path || null);
     } else {
       setEditingArticle(null);
       setFormData({
@@ -68,8 +78,10 @@ const Articles = () => {
         summary: '',
         content: '',
         published: true,
-        tag_ids: []
+        tag_ids: [],
+        image: null
       });
+      setPreviewUrl(null);
     }
     setErrors({});
     setIsModalOpen(true);
@@ -78,17 +90,50 @@ const Articles = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingArticle(null);
+    setPreviewUrl(null);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, image: file });
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setErrors({});
+
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('category_id', formData.category_id);
+    data.append('summary', formData.summary);
+    data.append('content', formData.content);
+    data.append('published', formData.published ? 1 : 0);
+
+    formData.tag_ids.forEach(id => {
+      data.append('tags[]', id);
+    });
+
+    if (formData.image) {
+      data.append('image', formData.image);
+    }
+
+    if (editingArticle) {
+      data.append('_method', 'PUT');
+    }
+
     try {
       if (editingArticle) {
-        await api.put(`/blog/${editingArticle.id}`, formData);
+        await api.post(`/blog/${editingArticle.id}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        await api.post('/blog', formData);
+        await api.post('/blog', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
       fetchData();
       handleCloseModal();
@@ -99,13 +144,32 @@ const Articles = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return;
+  const handleDeleteClick = (id) => {
+    setArticleToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!articleToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/blog/${id}`);
+      await api.delete(`/blog/${articleToDelete}`);
       fetchData();
+      setIsConfirmOpen(false);
+      setArticleToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression de l\'article');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleStatus = async (article) => {
+    try {
+      await api.put(`/blog/${article.id}`, { ...article, published: !article.published });
+      fetchData();
+    } catch (error) {
+      console.error('Échec de la mise à jour du statut');
     }
   };
 
@@ -132,6 +196,7 @@ const Articles = () => {
             <Table>
               <THead>
                 <TR>
+                  <TH>Statut</TH>
                   <TH>Titre</TH>
                   <TH>Catégorie</TH>
                   <TH>Statut</TH>
@@ -143,10 +208,24 @@ const Articles = () => {
                 {articles.map((article) => (
                   <TR key={article.id}>
                     <TD>
+                      <button
+                        onClick={() => toggleStatus(article)}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          article.published
+                            ? "text-green-600 bg-green-50 hover:bg-green-100"
+                            : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
+                        )}
+                        title={article.published ? "Publié" : "Brouillon"}
+                      >
+                        {article.published ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                    </TD>
+                    <TD>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] overflow-hidden">
-                          {article.featured_image ? (
-                            <img src={article.featured_image} alt="" className="w-full h-full object-cover" />
+                          {article.image_path ? (
+                            <img src={article.image_path} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <ImageIcon className="text-[hsla(210,15%,55%,1)]" size={20} />
                           )}
@@ -172,7 +251,7 @@ const Articles = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(article)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(article.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(article.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -198,6 +277,36 @@ const Articles = () => {
         className="max-w-4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col items-center gap-4 py-4 border-b border-[#E0E6ED] mb-6">
+            <div className="w-full aspect-video rounded-2xl border-2 border-dashed border-[#E0E6ED] flex items-center justify-center overflow-hidden bg-[hsla(210,25%,98%,1)] relative group">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-center">
+                  <ImageIcon size={48} className="text-[hsla(210,15%,55%,1)] mx-auto mb-2" />
+                  <p className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Image mise en avant</p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2 font-bold"
+              >
+                <Upload size={20} />
+                Changer l'image
+              </button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*"
+            />
+            <p className="text-xs font-medium text-[hsla(210,20%,40%,1)] uppercase tracking-widest">Format recommandé: 16:9 (ex: 1280x720)</p>
+            {errors.image && <p className="text-xs font-medium text-[#D64545]">{errors.image[0]}</p>}
+          </div>
+
           <Input
             label="Titre de l'Article"
             placeholder="ex: L'avenir de l'architecture durable"
@@ -225,13 +334,11 @@ const Articles = () => {
             rows={2}
           />
 
-          <Textarea
+          <RichTextEditor
             label="Contenu"
-            placeholder="Contenu de l'article"
             value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, content: value })}
             error={errors.content?.[0]}
-            rows={10}
           />
 
           <div>
@@ -262,7 +369,7 @@ const Articles = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             <input
               type="checkbox"
               id="published"
@@ -271,7 +378,7 @@ const Articles = () => {
               className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
             />
             <label htmlFor="published" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
-              Publier cet article immédiatement
+              Publier l'article (visible sur le site)
             </label>
           </div>
 
@@ -288,6 +395,15 @@ const Articles = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer l'Article"
+        message="Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible."
+      />
     </div>
   );
 };

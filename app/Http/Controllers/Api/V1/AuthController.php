@@ -27,6 +27,10 @@ class AuthController extends Controller
             return $this->errorResponse('Identifiants invalides', [], 401);
         }
 
+        if (! $user->is_active) {
+            return $this->errorResponse('Votre compte a été désactivé. Veuillez contacter l\'administrateur.', [], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->successResponseWithToken($user, $token, 'Connexion réussie');

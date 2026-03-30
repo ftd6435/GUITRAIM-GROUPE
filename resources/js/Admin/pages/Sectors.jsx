@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Textarea } from '../../Components/ui/Input';
 import { Card, CardHeader, CardContent } from '../../Components/ui/Card';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
+import { cn } from '../../utils/utils';
 
 const Sectors = () => {
   const [sectors, setSectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [sectorToDelete, setSectorToDelete] = useState(null);
   const [editingSector, setEditingSector] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', icon: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', icon: '', is_visible: true });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchSectors = async () => {
     try {
@@ -36,10 +41,15 @@ const Sectors = () => {
   const handleOpenModal = (sector = null) => {
     if (sector) {
       setEditingSector(sector);
-      setFormData({ name: sector.name, description: sector.description || '', icon: sector.icon || '' });
+      setFormData({ 
+        name: sector.name, 
+        description: sector.description || '', 
+        icon: sector.icon || '',
+        is_visible: !!sector.is_visible 
+      });
     } else {
       setEditingSector(null);
-      setFormData({ name: '', description: '', icon: '' });
+      setFormData({ name: '', description: '', icon: '', is_visible: true });
     }
     setErrors({});
     setIsModalOpen(true);
@@ -69,13 +79,32 @@ const Sectors = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this sector?')) return;
+  const toggleVisibility = async (sector) => {
     try {
-      await api.delete(`/sectors/${id}`);
+      await api.put(`/sectors/${sector.id}`, { ...sector, is_visible: !sector.is_visible });
       fetchSectors();
     } catch (error) {
-      console.error('Failed to delete sector');
+      console.error('Échec de la mise à jour de la visibilité');
+    }
+  };
+
+  const handleDeleteClick = (id) => {
+    setSectorToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!sectorToDelete) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/sectors/${sectorToDelete}`);
+      fetchSectors();
+      setIsConfirmOpen(false);
+      setSectorToDelete(null);
+    } catch (error) {
+      console.error('Échec de la suppression du secteur');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -102,6 +131,7 @@ const Sectors = () => {
             <Table>
               <THead>
                 <TR>
+                  <TH>Statut</TH>
                   <TH>Nom</TH>
                   <TH>Description</TH>
                   <TH className="text-right">Actions</TH>
@@ -110,6 +140,20 @@ const Sectors = () => {
               <TBody>
                 {sectors.map((sector) => (
                   <TR key={sector.id}>
+                    <TD>
+                      <button
+                        onClick={() => toggleVisibility(sector)}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          sector.is_visible 
+                            ? "text-green-600 bg-green-50 hover:bg-green-100" 
+                            : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
+                        )}
+                        title={sector.is_visible ? "Visible sur le site" : "Masqué sur le site"}
+                      >
+                        {sector.is_visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                    </TD>
                     <TD className="font-semibold text-[hsla(210,30%,20%,1)]">{sector.name}</TD>
                     <TD className="max-w-md truncate">{sector.description || 'Pas de description'}</TD>
                     <TD className="text-right space-x-2">
@@ -124,7 +168,7 @@ const Sectors = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(sector.id)}
+                        onClick={() => handleDeleteClick(sector.id)}
                         className="text-[#D64545] hover:bg-[#D64545]/10"
                       >
                         <Trash2 size={16} />
@@ -134,7 +178,7 @@ const Sectors = () => {
                 ))}
                 {sectors.length === 0 && (
                   <TR>
-                    <TD colSpan={3} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
+                    <TD colSpan={4} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
                       Aucun secteur trouvé.
                     </TD>
                   </TR>
@@ -167,6 +211,20 @@ const Sectors = () => {
             error={errors.description?.[0]}
             rows={4}
           />
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="is_visible"
+              checked={formData.is_visible}
+              onChange={(e) => setFormData({ ...formData, is_visible: e.target.checked })}
+              className="w-4 h-4 text-[#1A3A5C] rounded border-[#E0E6ED] focus:ring-[#1A3A5C]/20"
+            />
+            <label htmlFor="is_visible" className="text-sm font-semibold text-[hsla(210,30%,20%,1)] cursor-pointer">
+              Visible sur le site public
+            </label>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
               Annuler
@@ -180,6 +238,15 @@ const Sectors = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleting}
+        title="Supprimer le Secteur"
+        message="Êtes-vous sûr de vouloir supprimer ce secteur ? Cela pourrait affecter les services et projets associés."
+      />
     </div>
   );
 };

@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'avatar',
+        'is_active',
     ];
 
     public function blogPosts()

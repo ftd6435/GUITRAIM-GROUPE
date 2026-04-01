@@ -33,6 +33,8 @@ Route::prefix('v1')->group(function () {
     // Public / Protected Resources
     Route::middleware('auth:sanctum')->group(function () {
         // Users (Admin only)
+        Route::get('users/switch-status/{id}', [UserController::class, 'switchStatus']);
+        Route::post('users/switch-role/{id}', [UserController::class, 'switchRole']);
         Route::apiResource('users', UserController::class);
 
         // Sectors (CRUD)

@@ -20,10 +20,13 @@ import Partners from './pages/Partners';
 import Pages from './pages/Pages';
 import Newsletter from './pages/Newsletter';
 import Users from './pages/Users';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 
+import Cookies from 'js-cookie';
+
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('auth_token');
+  const token = Cookies.get('auth_token');
   if (!token) {
     return <Navigate to="/auth/login" replace />;
   }
@@ -63,6 +66,7 @@ const AdminApp = () => {
           <Route path="media" element={<MediaLibrary />} />
           <Route path="settings" element={<Settings />} />
           <Route path="users" element={<Users />} />
+          <Route path="profile" element={<Profile />} />
 
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

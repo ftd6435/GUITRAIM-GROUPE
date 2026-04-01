@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,64 +6,97 @@
 @source '../**/*.js';
 @source '../**/*.jsx';
 
-
 @theme {
-    --font-sans: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans:
+        "Plus Jakarta Sans", "Instrument Sans", ui-sans-serif, system-ui,
+        sans-serif;
+}
+
+@layer components {
+    .container {
+        @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl w-full;
+    }
 }
 
 @layer base {
-  body {
-    @apply font-sans text-[hsla(210,30%,20%,1)] bg-[hsla(40,30%,99%,1)];
-  }
+    body {
+        @apply font-sans text-[hsla(210,30%,20%,1)] bg-[hsla(40,30%,99%,1)];
+    }
 
-  .animate-pulse-slow {
-    animation: pulseSlow 8s ease-in-out infinite;
-  }
+    .animate-pulse-slow {
+        animation: pulseSlow 8s ease-in-out infinite;
+    }
 
-  @keyframes pulseSlow {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
+    @keyframes pulseSlow {
+        0%,
+        100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
 
-  .page-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
-  }
+    .page-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
 
-  .scale-up {
-    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
+    .scale-up {
+        animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-  @keyframes scaleUp {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
+    @keyframes scaleUp {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
 
-  /* Professional Reveal Animations */
-  .reveal-base {
-    opacity: 0;
-    filter: blur(10px);
-    transition: 
-      opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-      filter 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: opacity, transform, filter;
-  }
+    /* Professional Reveal Animations */
+    .reveal-base {
+        opacity: 0;
+        filter: blur(10px);
+        transition:
+            opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+            filter 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: opacity, transform, filter;
+    }
 
-  .reveal-up { transform: translateY(60px); }
-  .reveal-down { transform: translateY(-60px); }
-  .reveal-left { transform: translateX(60px); }
-  .reveal-right { transform: translateX(-60px); }
-  .reveal-none { transform: scale(0.92); }
+    .reveal-up {
+        transform: translateY(60px);
+    }
+    .reveal-down {
+        transform: translateY(-60px);
+    }
+    .reveal-left {
+        transform: translateX(60px);
+    }
+    .reveal-right {
+        transform: translateX(-60px);
+    }
+    .reveal-none {
+        transform: scale(0.92);
+    }
 
-  .reveal-visible {
-    opacity: 1 !important;
-    transform: translate(0, 0) scale(1) !important;
-    filter: blur(0) !important;
-  }
+    .reveal-visible {
+        opacity: 1 !important;
+        transform: translate(0, 0) scale(1) !important;
+        filter: blur(0) !important;
+    }
 }
-

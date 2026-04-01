@@ -196,12 +196,12 @@ const Home = () => {
             </div>
 
             <div className="relative z-10 pt-4 flex justify-center">
-              <Link to="/contact">
-                <Button className="h-16 px-12 rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3">
-                  <Mail size={24} />
-                  Contactez-Nous Maintenant
-                </Button>
-              </Link>
+              <Link to="/contact" className="w-full sm:w-auto flex justify-center">
+              <Button className="h-14 sm:h-16 px-6 sm:px-12 rounded-[20px] sm:rounded-[24px] bg-[#4A8BC2] hover:bg-[#4A8BC2]/90 text-white font-bold text-base sm:text-lg shadow-2xl shadow-[#4A8BC2]/40 gap-3 w-full max-w-[320px] sm:max-w-none">
+                <Mail size={20} className="sm:w-6 sm:h-6" />
+                Contactez-Nous Maintenant
+              </Button>
+            </Link>
             </div>
           </div>
         </Reveal>

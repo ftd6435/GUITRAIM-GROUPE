@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Administration | GUITRAIM GROUPE - {{ config('app.name', 'Laravel') }}</title>
+    <title>Administration | GUITRAIM GROUPE </title>
      <link rel="icon" href="/img/favicon.png" />
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])

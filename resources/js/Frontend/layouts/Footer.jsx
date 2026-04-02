@@ -1,9 +1,35 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Link as LinkIcon, User, Camera } from 'lucide-react';
+import { Phone, Mail, MapPin, Link as LinkIcon, User, Camera, Share2 } from 'lucide-react';
+import api from '../../utils/api';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        setSettings(response.data || null);
+      } catch (e) {
+        setSettings(null);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const contactInfo = useMemo(() => {
+    return {
+      address: settings?.address || 'Quartier Almamya, Commune de Kaloum, Conakry, Guinée',
+      phone: settings?.phone || '+224 628 xx xx xx',
+      email: settings?.email || 'contact@guitraimgroupe.gn',
+      facebook_url: settings?.facebook_url || '',
+      linkedin_url: settings?.linkedin_url || '',
+      x_url: settings?.x_url || '',
+      instagram_url: settings?.instagram_url || '',
+    };
+  }, [settings]);
 
   return (
     <footer className="bg-white border-t border-[hsla(210,20%,94%,1)] pt-20 pb-10 flex justify-center">
@@ -50,19 +76,19 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-[#1A3A5C] shrink-0 mt-0.5" />
                 <span className="text-sm font-semibold text-[hsla(210,20%,40%,1)]">
-                  Quartier Almamya, Commune de Kaloum, Conakry, Guinée
+                  {contactInfo.address}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-[#1A3A5C] shrink-0" />
                 <span className="text-sm font-semibold text-[hsla(210,20%,40%,1)]">
-                  +224 628 xx xx xx
+                  {contactInfo.phone}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-[#1A3A5C] shrink-0" />
                 <span className="text-sm font-semibold text-[hsla(210,20%,40%,1)]">
-                  contact@guitraimgroupe.gn
+                  {contactInfo.email}
                 </span>
               </li>
             </ul>
@@ -72,15 +98,46 @@ const Footer = () => {
           <div className="space-y-6">
             <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Suivez-Nous</h4>
             <div className="flex items-center gap-4">
-              <a href="#" className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all">
-                <User size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all">
-                <LinkIcon size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all">
-                <Camera size={18} />
-              </a>
+              {contactInfo.facebook_url ? (
+                <a
+                  href={contactInfo.facebook_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all"
+                >
+                  <User size={18} />
+                </a>
+              ) : null}
+              {contactInfo.linkedin_url ? (
+                <a
+                  href={contactInfo.linkedin_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all"
+                >
+                  <LinkIcon size={18} />
+                </a>
+              ) : null}
+              {contactInfo.x_url ? (
+                <a
+                  href={contactInfo.x_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all"
+                >
+                  <Share2 size={18} />
+                </a>
+              ) : null}
+              {contactInfo.instagram_url ? (
+                <a
+                  href={contactInfo.instagram_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-10 h-10 rounded-full border border-[hsla(210,20%,90%,1)] flex items-center justify-center text-[#1A3A5C] hover:bg-[#1A3A5C] hover:text-white transition-all"
+                >
+                  <Camera size={18} />
+                </a>
+              ) : null}
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@ use App\Models\BlogPost;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
@@ -16,6 +17,10 @@ class BlogController extends Controller
     public function index(Request $request)
     {
         $query = BlogPost::with(['author', 'category', 'tags', 'createdBy', 'updatedBy']);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->whereNotNull('published_at');
+        }
 
         if ($request->has('category')) {
             $query->whereHas('category', function ($q) use ($request) {
@@ -34,7 +39,14 @@ class BlogController extends Controller
 
     public function show($slug)
     {
-        $post = BlogPost::with(['author', 'category', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+        $query = BlogPost::with(['author', 'category', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->whereNotNull('published_at');
+        }
+
+        $post = $query->firstOrFail();
+
 
         return $this->successResponse($post);
     }

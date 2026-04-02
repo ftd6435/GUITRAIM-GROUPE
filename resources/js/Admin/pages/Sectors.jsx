@@ -17,7 +17,7 @@ const Sectors = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [sectorToDelete, setSectorToDelete] = useState(null);
   const [editingSector, setEditingSector] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', icon: '', is_visible: true });
+  const [formData, setFormData] = useState({ name: '', description: '', highlight_title: '', highlight_items_text: '', icon: '', is_visible: true });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -43,13 +43,15 @@ const Sectors = () => {
       setEditingSector(sector);
       setFormData({ 
         name: sector.name, 
-        description: sector.description || '', 
+        description: sector.description || '',
+        highlight_title: sector.highlight_title || '',
+        highlight_items_text: Array.isArray(sector.highlight_items) ? sector.highlight_items.join('\n') : '',
         icon: sector.icon || '',
         is_visible: !!sector.is_visible 
       });
     } else {
       setEditingSector(null);
-      setFormData({ name: '', description: '', icon: '', is_visible: true });
+      setFormData({ name: '', description: '', highlight_title: '', highlight_items_text: '', icon: '', is_visible: true });
     }
     setErrors({});
     setIsModalOpen(true);
@@ -65,10 +67,24 @@ const Sectors = () => {
     setSubmitting(true);
     setErrors({});
     try {
+      const highlight_items = (formData.highlight_items_text || '')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const payload = {
+        name: formData.name,
+        description: formData.description,
+        highlight_title: formData.highlight_title || null,
+        highlight_items: highlight_items.length ? highlight_items : null,
+        icon: formData.icon,
+        is_visible: formData.is_visible,
+      };
+
       if (editingSector) {
-        await api.put(`/sectors/${editingSector.id}`, formData);
+        await api.put(`/sectors/${editingSector.id}`, payload);
       } else {
-        await api.post('/sectors', formData);
+        await api.post('/sectors', payload);
       }
       fetchSectors();
       handleCloseModal();
@@ -212,6 +228,23 @@ const Sectors = () => {
             rows={4}
           />
 
+          <Input
+            label="Titre du bloc (ex: Zones Géographiques Couvertes)"
+            placeholder="Titre du bloc d'informations"
+            value={formData.highlight_title}
+            onChange={(e) => setFormData({ ...formData, highlight_title: e.target.value })}
+            error={errors.highlight_title?.[0]}
+          />
+
+          <Textarea
+            label="Éléments (1 par ligne)"
+            placeholder={"Grand Conakry\nKindia\nMamou"}
+            value={formData.highlight_items_text}
+            onChange={(e) => setFormData({ ...formData, highlight_items_text: e.target.value })}
+            error={errors['highlight_items']?.[0] || errors['highlight_items.0']?.[0]}
+            rows={5}
+          />
+
           <div className="flex items-center gap-2 pt-2">
             <input
               type="checkbox"
@@ -252,4 +285,3 @@ const Sectors = () => {
 };
 
 export default Sectors;
-

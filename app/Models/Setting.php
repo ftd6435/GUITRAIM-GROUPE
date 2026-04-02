@@ -6,7 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    protected $fillable = ['site_name', 'logo', 'address', 'phone', 'email', 'working_hours', 'created_by', 'updated_by'];
+    protected $fillable = [
+        'site_name',
+        'logo',
+        'address',
+        'phone',
+        'email',
+        'working_hours',
+        'facebook_url',
+        'linkedin_url',
+        'x_url',
+        'instagram_url',
+        'created_by',
+        'updated_by',
+    ];
 
     public function createdBy()
     {

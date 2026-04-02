@@ -1,122 +1,64 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, MapPin, Calendar, Search, Filter } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
+import api from '../../utils/api';
 
 const Projects = () => {
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = React.useState('all');
+  const [sectors, setSectors] = React.useState([]);
+  const [projects, setProjects] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
-    if (filterParam && categories.some(cat => cat.id === filterParam)) {
-      setFilter(filterParam);
-    }
+    if (filterParam) setFilter(filterParam);
   }, [searchParams]);
 
-  const categories = [
-    { id: 'all', label: 'Tous les Projets' },
-    { id: 'construction', label: 'Construction' },
-    { id: 'immobilier', label: 'Immobilier' },
-    { id: 'transport', label: 'Transport & Logistique' },
-    { id: 'technologie', label: 'Technologie' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [sectorsResponse, projectsResponse] = await Promise.all([
+          api.get('/sectors'),
+          api.get('/projects'),
+        ]);
+        setSectors(sectorsResponse.data || []);
+        setProjects(projectsResponse.data || []);
+      } catch (e) {
+        setSectors([]);
+        setProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const projects = [
-    {
-      id: 1,
-      title: 'Centre d\'Affaires de Kaloum',
-      category: 'construction',
-      categoryLabel: 'Construction',
-      location: 'Conakry',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop',
-      desc: 'Complexe moderne de bureaux et espaces commerciaux au cœur de Conakry, offrant des infrastructures de qualité internationale.'
-    },
-    {
-      id: 2,
-      title: 'Résidence Les Palmiers',
-      category: 'immobilier',
-      categoryLabel: 'Immobilier',
-      location: 'Coyah',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop',
-      desc: 'Développement résidentiel haut de gamme avec 150 villas modernes et infrastructures complètes pour un cadre de vie exceptionnel.'
-    },
-    {
-      id: 3,
-      title: 'Hub Logistique National',
-      category: 'transport',
-      categoryLabel: 'Transport',
-      location: 'Dubréka',
-      year: '2022',
-      image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
-      desc: 'Centre de distribution stratégique connectant Conakry aux régions de l\'intérieur avec des capacités de stockage optimisées.'
-    },
-    {
-      id: 4,
-      title: 'École Moderne de Kindia',
-      category: 'construction',
-      categoryLabel: 'Construction',
-      location: 'Kindia',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=800&auto=format&fit=crop',
-      desc: 'Établissement scolaire moderne avec 24 salles de classe, laboratoires et espaces récréatifs pour 800 élèves.'
-    },
-    {
-      id: 5,
-      title: 'Plateforme E-Commerce GuinShop',
-      category: 'technologie',
-      categoryLabel: 'Technologie',
-      location: 'Conakry',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop',
-      desc: 'Plateforme de commerce électronique complète connectant vendeurs et acheteurs à travers la Guinée avec paiement mobile intégré.'
-    },
-    {
-      id: 6,
-      title: 'Centre Commercial Madina',
-      category: 'immobilier',
-      categoryLabel: 'Immobilier',
-      location: 'Conakry',
-      year: '2022',
-      image: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?q=80&w=800&auto=format&fit=crop',
-      desc: 'Centre commercial moderne avec 80 boutiques, supermarché, restaurants et espaces de divertissement sur 3 niveaux.'
-    },
-    {
-      id: 7,
-      title: 'Autoroute Conakry-Coyah',
-      category: 'construction',
-      categoryLabel: 'Construction',
-      location: 'Conakry-Coyah',
-      year: '2022',
-      image: 'https://images.unsplash.com/photo-1545143333-6382f1d5b893?q=80&w=800&auto=format&fit=crop',
-      desc: 'Infrastructure routière moderne de 45 km reliant Conakry à Coyah avec voies express et échangeurs autoroutiers.'
-    },
-    {
-      id: 8,
-      title: 'Flotte Transport Régional',
-      category: 'transport',
-      categoryLabel: 'Transport',
-      location: 'National',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1606185540410-dd628c04eec2?q=80&w=800&auto=format&fit=crop',
-      desc: 'Système de gestion de flotte moderne avec 150 véhicules couvrant toutes les régions de la Guinée et GPS intégré.'
-    },
-    {
-      id: 9,
-      title: 'Tours Résidentielles Kipé',
-      category: 'immobilier',
-      categoryLabel: 'Immobilier',
-      location: 'Ratoma',
-      year: '2023',
-      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop',
-      desc: 'Complexe résidentiel de 4 tours avec 200 appartements haut standing et services communautaires intégrés.'
+  const categories = useMemo(() => {
+    return [
+      { id: 'all', label: 'Tous les Projets' },
+      ...sectors.map((s) => ({ id: s.slug, label: s.name })),
+    ];
+  }, [sectors]);
+
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (!filterParam) return;
+    if (filterParam === 'all') {
+      setFilter('all');
+      return;
     }
-  ];
+    if (categories.some((cat) => cat.id === filterParam)) {
+      setFilter(filterParam);
+    }
+  }, [searchParams, categories]);
 
-  const filteredProjects = projects.filter(p => filter === 'all' || p.category === filter);
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => filter === 'all' || p?.sector?.slug === filter);
+  }, [projects, filter]);
 
   return (
     <div className="pb-24">
@@ -164,23 +106,29 @@ const Projects = () => {
             </div>
           </div>
           <div className="text-sm font-bold text-[hsla(210,20%,40%,1)]">
-            {filteredProjects.length} projets trouvés
+            {loading ? 'Chargement...' : `${filteredProjects.length} projets trouvés`}
           </div>
         </div>
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map((project) => (
+          {!loading && filteredProjects.map((project) => {
+            const imageUrl =
+              project?.images?.[0]?.image_path ||
+              'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop';
+            const categoryLabel = project?.sector?.name || 'Projet';
+
+            return (
             <div key={project.id} className="group bg-white rounded-[32px] overflow-hidden border border-[#E0E6ED] hover:shadow-2xl transition-all duration-500 flex flex-col">
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img
-                  src={project.image}
+                  src={imageUrl}
                   alt={project.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                    {project.categoryLabel}
+                    {categoryLabel}
                   </span>
                 </div>
               </div>
@@ -193,29 +141,29 @@ const Projects = () => {
                   <div className="flex items-center gap-4 text-xs font-bold text-[hsla(210,20%,60%,1)]">
                     <div className="flex items-center gap-1.5">
                       <MapPin size={14} className="text-[#4A8BC2]" />
-                      {project.location}
+                      {project.location || '—'}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Calendar size={14} className="text-[#4A8BC2]" />
-                      {project.year}
+                      {project.year || '—'}
                     </div>
                   </div>
                   <p className="text-sm font-medium leading-relaxed text-[hsla(210,20%,40%,1)] line-clamp-3">
-                    {project.desc}
+                    {project.description || ''}
                   </p>
                 </div>
 
                 <div className="pt-4 border-t border-[#E0E6ED]">
-                  <Link to={`/projets/${project.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] hover:gap-3 transition-all pt-2">
+                  <Link to={`/projets/${project.slug}`} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] hover:gap-3 transition-all pt-2">
                     Voir le Projet <ArrowRight size={16} />
                   </Link>
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
-        {filteredProjects.length === 0 && (
+        {!loading && filteredProjects.length === 0 && (
           <div className="py-24 text-center space-y-4">
             <div className="w-20 h-20 rounded-full bg-[hsla(210,25%,98%,1)] flex items-center justify-center mx-auto text-[hsla(210,20%,60%,1)]">
               <Search size={32} />

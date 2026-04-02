@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Service extends Model
+class ServiceImage extends Model
 {
-    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'description', 'content', 'image', 'created_by', 'updated_by'];
+    protected $fillable = ['service_id', 'image', 'sort_order', 'created_by', 'updated_by'];
 
     protected $appends = ['image_path'];
 
@@ -15,14 +15,9 @@ class Service extends Model
         return $this->image ? asset('storage/images/services/' . $this->image) : null;
     }
 
-    public function sector()
+    public function service()
     {
-        return $this->belongsTo(Sector::class);
-    }
-
-    public function images()
-    {
-        return $this->hasMany(ServiceImage::class)->orderBy('sort_order');
+        return $this->belongsTo(Service::class);
     }
 
     public function createdBy()
@@ -35,3 +30,4 @@ class Service extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 }
+

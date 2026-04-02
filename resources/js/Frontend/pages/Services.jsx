@@ -1,101 +1,138 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HardHat, Home as HomeIcon, Truck, Monitor, CheckCircle2, ArrowRight, Download, Mail } from 'lucide-react';
+import { HardHat, Home as HomeIcon, Truck, Monitor, CheckCircle2, ArrowRight, Download, Mail, Loader2 } from 'lucide-react';
 import Button from '../../Components/ui/Button';
 import { cn } from '../../utils/utils';
 import Reveal from '../components/Reveal';
+import api from '../../utils/api';
 
 const Services = () => {
-  const sectors = [
-    {
-      id: 'construction',
-      icon: <HardHat size={32} />,
-      title: 'Construction & BTP',
-      desc: 'Notre département construction offre une gamme complète de services pour tous vos projets de bâtiment et d\'infrastructure, de la conception à la livraison.',
-      features: [
-        'Construction de bâtiments commerciaux et industriels',
-        'Travaux de génie civil et d\'infrastructure',
-        'Rénovation et réhabilitation de bâtiments existants',
-        'Gestion de projets de construction clé en main'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1590644365607-1c5a519a7a37?q=80&w=800&auto=format&fit=crop'
-      ],
-      cta: 'Voir Nos Projets Construction'
-    },
-    {
-      id: 'immobilier',
-      icon: <HomeIcon size={32} />,
-      title: 'Immobilier & Vente de Terrains',
-      desc: 'Développement immobilier et conseil en investissement foncier pour particuliers et entreprises, avec un accompagnement personnalisé tout au long du processus d\'acquisition.',
-      features: [
-        'Vente de parcelles viabilisées et titrées',
-        'Promotion immobilière et développement de projets',
-        'Accompagnement juridique et administratif complet',
-        'Conseil en investissement immobilier stratégique'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800&auto=format&fit=crop'
-      ],
-      cta: 'Découvrir Nos Offres Immobilières',
-      highlights: {
-        title: 'Zones Géographiques Couvertes',
-        items: ['Grand Conakry', 'Kindia', 'Mamou', 'Labé', 'Kankan', 'Nzérékoré']
+  const [sectors, setSectors] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedServices, setExpandedServices] = useState({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [sectorsResponse, servicesResponse] = await Promise.all([
+          api.get('/sectors'),
+          api.get('/services'),
+        ]);
+        setSectors(sectorsResponse.data || []);
+        setServices(servicesResponse.data || []);
+      } catch (e) {
+        setSectors([]);
+        setServices([]);
+      } finally {
+        setLoading(false);
       }
+    };
+    fetchData();
+  }, []);
+
+  const iconForSector = (sectorSlug) => {
+    const slug = (sectorSlug || '').toLowerCase();
+    if (slug.includes('construct') || slug.includes('btp')) return <HardHat size={32} />;
+    if (slug.includes('immo') || slug.includes('terrain')) return <HomeIcon size={32} />;
+    if (slug.includes('transport') || slug.includes('logist')) return <Truck size={32} />;
+    return <Monitor size={32} />;
+  };
+
+  const fallbackImagesBySector = {
+    construction: [
+      'https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590644365607-1c5a519a7a37?q=80&w=800&auto=format&fit=crop',
+    ],
+    immobilier: [
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800&auto=format&fit=crop',
+    ],
+    transport: [
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590486803833-ffc930279883?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1606185540410-dd628c04eec2?q=80&w=800&auto=format&fit=crop',
+    ],
+    technologie: [
+      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop',
+    ],
+  };
+
+  const highlightsBySector = {
+    immobilier: {
+      title: 'Zones Géographiques Couvertes',
+      items: ['Grand Conakry', 'Kindia', 'Mamou', 'Labé', 'Kankan', 'Nzérékoré'],
     },
-    {
-      id: 'transport',
-      icon: <Truck size={32} />,
-      title: 'Transport & Logistique',
-      desc: 'Solutions complètes de transport et de logistique pour optimiser vos chaînes d\'approvisionnement avec une flotte moderne et des services sur mesure.',
-      features: [
-        'Transport de marchandises national et régional',
-        'Solutions logistiques sur mesure et entreposage',
-        'Gestion complète de chaîne d\'approvisionnement',
-        'Flotte de véhicules adaptés aux besoins variés'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1590486803833-ffc930279883?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1606185540410-dd628c04eec2?q=80&w=800&auto=format&fit=crop'
-      ],
-      cta: 'Demander un Devis Transport',
-      highlights: {
-        title: 'Types de Transport Proposés',
-        items: ['Transport routier', 'Transit & Douane', 'Logistique Internationale', 'Distribution urbaine', 'Fret aérien & maritime', 'Transport Frigorifique']
-      }
+    transport: {
+      title: 'Types de Transport Proposés',
+      items: ['Transport routier', 'Transit & Douane', 'Logistique Internationale', 'Distribution urbaine', 'Fret aérien & maritime', 'Transport Frigorifique'],
     },
-    {
-      id: 'technologie',
-      icon: <Monitor size={32} />,
-      title: 'Solutions Technologiques',
-      desc: 'Développement web et solutions digitales pour moderniser vos processus et améliorer votre présence en ligne avec des technologies de pointe.',
-      features: [
-        'Développement de sites web professionnels et responsives',
-        'Applications web sur mesure et intégrations API',
-        'Solutions e-commerce complètes et paiement en ligne',
-        'Transformation digitale et modernisation d\'entreprises'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop'
-      ],
-      cta: 'Voir Nos Réalisations Tech',
-      highlights: {
-        title: 'Technologies Maîtrisées',
-        items: ['React / Next.js', 'E-commerce', 'Laravel / PHP', 'Mobile Apps', 'WordPress / CMS', 'Cloud Hosting']
-      }
-    }
-  ];
+    technologie: {
+      title: 'Technologies Maîtrisées',
+      items: ['React / Next.js', 'E-commerce', 'Laravel / PHP', 'Mobile Apps', 'WordPress / CMS', 'Cloud Hosting'],
+    },
+  };
+
+  const sectorsView = useMemo(() => {
+    return (sectors || []).map((sector) => {
+      const sectorServices = (services || []).filter((s) => s?.sector?.slug === sector.slug);
+      const features = sectorServices.slice(0, 4).map((s) => s.title);
+      const galleryImages = sectorServices
+        .flatMap((s) => (s?.images || []).map((img) => img?.image_path))
+        .filter(Boolean);
+      const mainImages = sectorServices.map((s) => s?.image_path).filter(Boolean);
+      const images = [...galleryImages, ...mainImages].slice(0, 4);
+
+      const key =
+        sector.slug?.includes('construct') ? 'construction' :
+        sector.slug?.includes('immo') ? 'immobilier' :
+        sector.slug?.includes('transport') || sector.slug?.includes('logist') ? 'transport' :
+        'technologie';
+
+      const fallbackImages = fallbackImagesBySector[key] || fallbackImagesBySector.technologie;
+      const finalImages = [...images, ...fallbackImages].slice(0, 4);
+
+      const cta =
+        key === 'transport'
+          ? 'Demander un Devis Transport'
+          : key === 'immobilier'
+            ? 'Découvrir Nos Offres Immobilières'
+            : key === 'technologie'
+              ? 'Voir Nos Réalisations Tech'
+              : 'Voir Nos Projets Construction';
+
+      return {
+        id: sector.slug,
+        icon: iconForSector(sector.slug),
+        title: sector.name,
+        desc: sector.description || '',
+        features,
+        services: sectorServices,
+        images: finalImages,
+        cta,
+        highlights: sector.highlight_title || (sector.highlight_items || []).length
+          ? {
+              title: sector.highlight_title || 'Informations',
+              items: (sector.highlight_items || []).filter(Boolean),
+            }
+          : highlightsBySector[key],
+        key,
+      };
+    });
+  }, [sectors, services]);
+
+  const toggleService = (serviceId) => {
+    setExpandedServices((prev) => ({ ...prev, [serviceId]: !prev[serviceId] }));
+  };
 
   return (
     <div className="pb-24">
@@ -124,7 +161,13 @@ const Services = () => {
       <Reveal className="bg-white border-b border-[#E0E6ED] sticky top-20 z-30 hidden lg:block" direction="none">
         <div className="container px-4 lg:px-8">
           <div className="flex items-center justify-center gap-12 h-20">
-            {sectors.map((sector) => (
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm font-bold text-[hsla(210,20%,40%,1)]">
+                <Loader2 className="animate-spin" size={18} />
+                Chargement...
+              </div>
+            ) : (
+              sectorsView.map((sector) => (
               <a
                 key={sector.id}
                 href={`#${sector.id}`}
@@ -135,7 +178,8 @@ const Services = () => {
                 </span>
                 {sector.title}
               </a>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </Reveal>
@@ -150,7 +194,7 @@ const Services = () => {
 
       {/* Sectors Detail */}
       <section className="container px-4 lg:px-8 space-y-32">
-        {sectors.map((sector, index) => (
+        {sectorsView.map((sector, index) => (
           <div key={sector.id} id={sector.id} className={cn(
             "flex flex-col gap-12 lg:gap-20",
             index % 2 !== 0 ? "lg:flex-row-reverse" : "lg:flex-row"
@@ -168,14 +212,52 @@ const Services = () => {
                 {sector.desc}
               </p>
 
-              <ul className="space-y-4">
-                {sector.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <CheckCircle2 size={20} className="text-[#4A8BC2] shrink-0 mt-1" />
-                    <span className="font-semibold text-[hsla(210,30%,20%,1)]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+              {(sector.services || []).length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Nos Services</h4>
+                  <div className="space-y-3">
+                    {sector.services.map((service) => {
+                      const hasContent = !!service?.content;
+                      const isExpanded = !!expandedServices[service.id];
+                      return (
+                        <div
+                          key={service.id}
+                          className="bg-white rounded-[24px] border border-[#E0E6ED] p-6 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1">
+                              <div className="text-base font-bold text-[hsla(210,30%,20%,1)]">
+                                {service.title}
+                              </div>
+                              {service.description ? (
+                                <div className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+                                  {service.description}
+                                </div>
+                              ) : null}
+                            </div>
+                            {hasContent ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleService(service.id)}
+                                className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold border border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] hover:border-[#1A3A5C] transition-colors"
+                              >
+                                {isExpanded ? 'Masquer' : 'Voir détails'}
+                              </button>
+                            ) : null}
+                          </div>
+
+                          {hasContent && isExpanded ? (
+                            <div
+                              className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed pt-2 border-t border-[#E0E6ED] [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-[#4A8BC2] [&_a]:font-bold"
+                              dangerouslySetInnerHTML={{ __html: service.content }}
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {sector.highlights && (
                 <div className="bg-[hsla(210,25%,98%,1)] p-8 rounded-[32px] border border-[#E0E6ED] space-y-4">
@@ -192,7 +274,7 @@ const Services = () => {
               )}
 
               <div className="pt-4 flex">
-                <Link to={sector.id === 'construction' ? '/projets?filter=construction' : sector.id === 'immobilier' ? '/projets?filter=immobilier' : sector.id === 'transport' ? '/contact' : '/projets?filter=technologie'} className="w-full sm:w-auto">
+                <Link to={sector.key === 'transport' ? '/contact' : `/projets?filter=${sector.id}`} className="w-full sm:w-auto">
                   <Button className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-base shadow-xl shadow-[#1A3A5C]/20">
                     {sector.cta}
                   </Button>

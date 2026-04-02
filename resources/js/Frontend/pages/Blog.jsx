@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Calendar, User } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
+import api from '../../utils/api';
 
 const Blog = () => {
-  const articles = [
+  const fallbackArticles = [
     {
       id: 1,
       title: 'Les Nouvelles Techniques de Construction Durable en Guinée',
@@ -98,6 +99,28 @@ const Blog = () => {
     }
   ];
 
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/blog');
+        setArticles(response.data || []);
+      } catch (e) {
+        setArticles([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
+
+  const displayedArticles = useMemo(() => {
+    return articles.length ? articles : fallbackArticles;
+  }, [articles, fallbackArticles]);
+
   return (
     <div className="pb-24">
       {/* Header Section */}
@@ -131,57 +154,75 @@ const Blog = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {articles.map((article) => (
-            <div key={article.id} className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-[#E0E6ED] hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-[16/10] overflow-hidden relative">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-sm text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                    {article.category}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-8 flex flex-col flex-grow space-y-4">
-                <div className="flex items-center gap-4 text-[10px] font-bold text-[hsla(210,20%,60%,1)] uppercase tracking-widest">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={12} className="text-[#4A8BC2]" />
-                    {article.date}
-                  </div>
-                </div>
-
-                <div className="space-y-3 flex-grow">
-                  <h3 className="text-xl font-bold text-[#1A3A5C] group-hover:text-[#4A8BC2] transition-colors leading-tight">
-                    {article.title}
-                  </h3>
-                  <p className="text-sm font-medium leading-relaxed text-[hsla(210,20%,40%,1)] line-clamp-3">
-                    {article.summary}
-                  </p>
-                </div>
-
-                <div className="pt-6 mt-4 border-t border-[#E0E6ED] flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-[hsla(210,20%,40%,1)] uppercase tracking-wider">
-                    <Clock size={12} className="text-[#4A8BC2]" />
-                    {article.readTime}
-                  </div>
-                  <Link to={`/blog/${article.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] group-hover:gap-3 transition-all">
-                    Lire l'Article <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
+          {loading ? (
+            <div className="col-span-full text-center text-sm font-medium text-[hsla(210,20%,40%,1)]">
+              Chargement...
             </div>
-          ))}
-        </div>
+          ) : (
+            displayedArticles.map((article) => {
+              const imageUrl =
+                article.image_path ||
+                article.image ||
+                'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=800&auto=format&fit=crop';
+              const categoryLabel = article?.category?.name || article.category || 'Actualités';
+              const dateLabel = article?.published_at
+                ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                : article.date || '';
+              const authorLabel = article?.author?.name || article.author || 'Équipe GUITRAIM';
+              const readTimeLabel = article?.reading_time ? `${article.reading_time} min de lecture` : article.readTime || '';
+              const excerpt = article.excerpt || article.summary || '';
+              const articleSlug = article.slug || article.id;
 
-        {/* Pagination/Load More */}
-        <div className="text-center pt-8">
-          <Button variant="secondary" className="h-14 px-10 rounded-2xl border-[#E0E6ED] text-[#1A3A5C] font-bold text-lg hover:bg-[hsla(210,25%,98%,1)]">
-            Charger Plus d'Articles
-          </Button>
+              return (
+                <div key={article.id} className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-[#E0E6ED] hover:shadow-2xl transition-all duration-500">
+                  <div className="aspect-[16/10] overflow-hidden relative">
+                    <img
+                      src={imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-sm text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                        {categoryLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-8 flex flex-col flex-grow space-y-4">
+                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-[hsla(210,20%,60%,1)] uppercase tracking-widest">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={12} className="text-[#4A8BC2]" />
+                        {dateLabel}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User size={12} className="text-[#4A8BC2]" />
+                        {authorLabel}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 flex-grow">
+                      <h3 className="text-xl font-bold text-[#1A3A5C] group-hover:text-[#4A8BC2] transition-colors leading-tight">
+                        {article.title}
+                      </h3>
+                      <p className="text-sm font-medium leading-relaxed text-[hsla(210,20%,40%,1)] line-clamp-3">
+                        {excerpt}
+                      </p>
+                    </div>
+
+                    <div className="pt-6 mt-4 border-t border-[#E0E6ED] flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-[hsla(210,20%,40%,1)] uppercase tracking-wider">
+                        <Clock size={12} className="text-[#4A8BC2]" />
+                        {readTimeLabel}
+                      </div>
+                      <Link to={`/blog/${articleSlug}`} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] group-hover:gap-3 transition-all">
+                        Lire l'Article <ArrowRight size={16} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </section>
     </div>

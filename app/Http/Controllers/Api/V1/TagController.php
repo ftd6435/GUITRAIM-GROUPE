@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tag;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class TagController extends Controller
@@ -14,7 +15,13 @@ class TagController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Tag::with(['createdBy', 'updatedBy'])->get());
+        $query = Tag::with(['createdBy', 'updatedBy']);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('status', true);
+        }
+
+        return $this->successResponse($query->get());
     }
 
     public function store(Request $request)

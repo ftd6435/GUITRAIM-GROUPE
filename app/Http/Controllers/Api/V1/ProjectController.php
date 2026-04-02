@@ -39,7 +39,14 @@ class ProjectController extends Controller
 
     public function show($slug)
     {
-        $project = Project::with(['sector', 'images', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+        $query = Project::with(['sector', 'images', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        $project = $query->firstOrFail();
+
 
         return $this->successResponse($project);
     }

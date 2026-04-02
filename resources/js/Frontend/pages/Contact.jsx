@@ -1,22 +1,74 @@
-import React from 'react';
-import { Mail, Phone, MapPin, Send, ArrowRight, MessageSquare, Clock } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Mail, Phone, MapPin, Send, ArrowRight, Clock, Loader2 } from 'lucide-react';
 import Button from '../../Components/ui/Button';
 import { Input, Textarea } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
+import api from '../../utils/api';
 
 const Contact = () => {
-  const [formData, setFormData] = React.useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
-  const handleSubmit = (e) => {
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    project_type: '',
+    message: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        const response = await api.get('/settings');
+        setSettings(response.data || null);
+      } catch (e) {
+        setSettings(null);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const contactInfo = useMemo(() => {
+    return {
+      address: settings?.address || 'Quartier Almamya, Commune de Kaloum, Conakry, Guinée',
+      phone: settings?.phone || '+224 628 xx xx xx',
+      email: settings?.email || 'contact@guitraimgroupe.gn',
+      working_hours: settings?.working_hours || 'Lun - Ven : 08h00 - 18h00\nSam : 09h00 - 13h00',
+    };
+  }, [settings]);
+
+  const showToast = (type, message) => {
+    window.dispatchEvent(
+      new CustomEvent('app-toast', {
+        detail: { type, message },
+      })
+    );
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Merci ! Votre message a été envoyé avec succès.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setSubmitting(true);
+    setErrors({});
+    try {
+      await api.post('/contact', formData);
+      showToast('success', 'Merci ! Votre message a été envoyé avec succès.');
+      setFormData({ full_name: '', email: '', phone: '', project_type: '', message: '' });
+    } catch (error) {
+      if (error?.errors) {
+        setErrors(error.errors);
+        showToast('error', error.message || 'Veuillez corriger les erreurs du formulaire.');
+      } else {
+        showToast('error', 'Une erreur est survenue. Veuillez réessayer.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -60,9 +112,7 @@ const Contact = () => {
                 </div>
                 <div className="space-y-1 pt-2">
                   <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Notre Bureau</h4>
-                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">
-                    Quartier Almamya, Commune de Kaloum, Conakry, Guinée
-                  </p>
+                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">{contactInfo.address}</p>
                 </div>
               </div>
 
@@ -72,9 +122,7 @@ const Contact = () => {
                 </div>
                 <div className="space-y-1 pt-2">
                   <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Téléphone</h4>
-                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">
-                    +224 628 xx xx xx
-                  </p>
+                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">{contactInfo.phone}</p>
                 </div>
               </div>
 
@@ -84,9 +132,7 @@ const Contact = () => {
                 </div>
                 <div className="space-y-1 pt-2">
                   <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Email</h4>
-                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">
-                    contact@guitraimgroupe.gn
-                  </p>
+                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">{contactInfo.email}</p>
                 </div>
               </div>
 
@@ -96,10 +142,16 @@ const Contact = () => {
                 </div>
                 <div className="space-y-1 pt-2">
                   <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A3A5C]">Horaires</h4>
-                  <p className="text-base font-semibold text-[hsla(210,20%,40%,1)]">
-                    Lun - Ven : 08h00 - 18h00<br />
-                    Sam : 09h00 - 13h00
-                  </p>
+                  {settingsLoading ? (
+                    <div className="flex items-center gap-2 text-sm font-bold text-[hsla(210,20%,50%,1)]">
+                      <Loader2 size={16} className="animate-spin" />
+                      Chargement...
+                    </div>
+                  ) : (
+                    <p className="text-base font-semibold text-[hsla(210,20%,40%,1)] whitespace-pre-line">
+                      {contactInfo.working_hours}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -119,39 +171,55 @@ const Contact = () => {
                     <Input
                       label="Nom Complet"
                       placeholder="votre nom"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       required
+                      error={errors?.full_name?.[0]}
                     />
                     <Input
                       label="Adresse Email"
                       type="email"
                       placeholder="votre@email.com"
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
+                      error={errors?.email?.[0]}
                     />
                   </div>
-                  <Input
-                    label="Sujet"
-                    placeholder="objet de votre message"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                    required
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input
+                      label="Téléphone (optionnel)"
+                      placeholder="+224 ..."
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      error={errors?.phone?.[0]}
+                    />
+                    <Input
+                      label="Type de projet (optionnel)"
+                      placeholder="ex: Construction, Immobilier..."
+                      value={formData.project_type}
+                      onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
+                      error={errors?.project_type?.[0]}
+                    />
+                  </div>
                   <Textarea
                     label="Message"
                     placeholder="Comment pouvons-nous vous aider ?"
                     value={formData.message}
-                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     required
                     className="min-h-[200px]"
+                    error={errors?.message?.[0]}
                   />
 
                   <div className="pt-4">
-                    <Button type="submit" className="h-16 px-12 rounded-[24px] bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20 gap-3 w-full sm:w-auto">
-                      <Send size={20} />
-                      Envoyer le Message
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="h-16 px-12 rounded-[24px] bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20 gap-3 w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {submitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                      {submitting ? 'Envoi...' : 'Envoyer le Message'}
                     </Button>
                   </div>
                 </form>

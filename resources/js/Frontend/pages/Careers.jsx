@@ -36,8 +36,7 @@ const Careers = () => {
     const fetchJobs = async () => {
       try {
         const response = await api.get('/jobs');
-        // Filter only open jobs
-        setJobs(response.data.filter(job => job.status === 'open'));
+        setJobs(response.data || []);
       } catch (error) {
         console.error('Failed to fetch jobs:', error);
       } finally {
@@ -571,4 +570,3 @@ const Careers = () => {
 };
 
 export default Careers;
-

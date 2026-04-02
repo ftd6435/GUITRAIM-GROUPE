@@ -24,7 +24,14 @@ class SectorController extends Controller
 
     public function show($slug)
     {
-        $sector = Sector::with(['createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+        $query = Sector::with(['createdBy', 'updatedBy'])->where('slug', $slug);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        $sector = $query->firstOrFail();
+
 
         return $this->successResponse($sector);
     }
@@ -34,6 +41,9 @@ class SectorController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
+            'highlight_title' => 'nullable|string|max:150',
+            'highlight_items' => 'nullable|array',
+            'highlight_items.*' => 'string|max:150',
             'icon' => 'nullable|string',
         ]);
 
@@ -53,6 +63,9 @@ class SectorController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:100',
             'description' => 'nullable|string',
+            'highlight_title' => 'nullable|string|max:150',
+            'highlight_items' => 'nullable|array',
+            'highlight_items.*' => 'string|max:150',
             'icon' => 'nullable|string',
         ]);
 

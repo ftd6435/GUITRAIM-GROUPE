@@ -1,58 +1,96 @@
-import React from 'react';
-import { ArrowRight, HardHat, Home as HomeIcon, Truck, Monitor, Star, Mail } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, HardHat, Home as HomeIcon, Truck, Monitor, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../../Components/ui/Button';
 import { Card, CardContent } from '../../Components/ui/Card';
 import Reveal from '../components/Reveal';
+import api from '../../utils/api';
 
 const Home = () => {
-  const domains = [
-    {
-      icon: <HardHat size={32} />,
-      title: 'Construction',
-      desc: 'Services complets de BTP, génie civil et construction d\'infrastructures avec une expertise reconnue en Guinée.',
-      path: '/services#construction'
-    },
-    {
-      icon: <HomeIcon size={32} />,
-      title: 'Immobilier',
-      desc: 'Développement immobilier, vente de terrains et conseil en investissement pour particuliers et entreprises.',
-      path: '/services#immobilier'
-    },
-    {
-      icon: <Truck size={32} />,
-      title: 'Transport & Logistique',
-      desc: 'Solutions complètes de transport, logistique et distribution pour optimiser vos chaînes d\'approvisionnement.',
-      path: '/services#transport'
-    },
-    {
-      icon: <Monitor size={32} />,
-      title: 'Technologie',
-      desc: 'Développement web, solutions digitales et transformation numérique pour moderniser vos processus.',
-      path: '/services#technologie'
-    }
-  ];
+  const [sectors, setSectors] = useState([]);
+  const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const projects = [
-    {
-      title: 'Centre d\'Affaires de Kaloum',
-      category: 'Construction',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop',
-      desc: 'Complexe moderne de bureaux et espaces commerciaux au cœur de Conakry.'
-    },
-    {
-      title: 'Résidence Les Palmiers',
-      category: 'Immobilier',
-      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop',
-      desc: 'Développement résidentiel haut de gamme avec 150 villas et infrastructures modernes.'
-    },
-    {
-      title: 'Hub Logistique National',
-      category: 'Transport',
-      image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
-      desc: 'Centre de distribution stratégique connectant Conakry aux régions de l\'intérieur.'
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [sectorsResponse, projectsResponse] = await Promise.all([
+          api.get('/sectors'),
+          api.get('/projects', { params: { featured: true } }),
+        ]);
+        setSectors(sectorsResponse.data || []);
+        setFeaturedProjects(projectsResponse.data || []);
+      } catch (e) {
+        setSectors([]);
+        setFeaturedProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const iconForSector = (sectorSlug) => {
+    const slug = (sectorSlug || '').toLowerCase();
+    if (slug.includes('construct') || slug.includes('btp')) return <HardHat size={32} />;
+    if (slug.includes('immo') || slug.includes('terrain')) return <HomeIcon size={32} />;
+    if (slug.includes('transport') || slug.includes('logist')) return <Truck size={32} />;
+    return <Monitor size={32} />;
+  };
+
+  const domains = useMemo(() => {
+    return (sectors || []).map((sector) => ({
+      icon: iconForSector(sector.slug),
+      title: sector.name,
+      desc: sector.description || '',
+      path: `/services#${sector.slug}`,
+    }));
+  }, [sectors]);
+
+  const fallbackProjects = useMemo(() => {
+    return [
+      {
+        title: "Centre d'Affaires de Kaloum",
+        category: 'Construction',
+        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop',
+        desc: 'Complexe moderne de bureaux et espaces commerciaux au cœur de Conakry.',
+        path: '/projets',
+      },
+      {
+        title: 'Résidence Les Palmiers',
+        category: 'Immobilier',
+        image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=800&auto=format&fit=crop',
+        desc: 'Développement résidentiel haut de gamme avec 150 villas et infrastructures modernes.',
+        path: '/projets',
+      },
+      {
+        title: 'Hub Logistique National',
+        category: 'Transport',
+        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
+        desc: "Centre de distribution stratégique connectant Conakry aux régions de l'intérieur du pays.",
+        path: '/projets',
+      },
+    ];
+  }, []);
+
+  const displayedProjects = useMemo(() => {
+    if ((featuredProjects || []).length) {
+      return featuredProjects.slice(0, 3).map((project) => {
+        const imageUrl =
+          project?.images?.[0]?.image_path ||
+          'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop';
+        return {
+          title: project.title,
+          category: project?.sector?.name || 'Projet',
+          image: imageUrl,
+          desc: project.description || '',
+          path: project.slug ? `/projets/${project.slug}` : '/projets',
+        };
+      });
     }
-  ];
+    return fallbackProjects;
+  }, [featuredProjects, fallbackProjects]);
 
   return (
     <div className="space-y-24 pb-24">
@@ -110,7 +148,11 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {domains.map((domain, index) => (
+            {loading && !domains.length ? (
+              <div className="col-span-full text-center text-sm font-bold text-[hsla(210,20%,40%,1)]">
+                Chargement...
+              </div>
+            ) : domains.map((domain, index) => (
               <Card key={index} className="group hover:border-[#1A3A5C] hover:shadow-2xl transition-all duration-500 rounded-[32px] overflow-hidden border-[#E0E6ED]">
                 <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
                   <div className="w-20 h-20 rounded-[24px] bg-[hsla(210,25%,98%,1)] flex items-center justify-center text-[#1A3A5C] group-hover:bg-[#1A3A5C] group-hover:text-white transition-all duration-500 transform group-hover:rotate-6">
@@ -143,7 +185,7 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {projects.map((project, index) => (
+            {displayedProjects.map((project, index) => (
               <div key={index} className="group relative rounded-[32px] overflow-hidden border border-[#E0E6ED] bg-white hover:shadow-2xl transition-all duration-500">
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
@@ -160,7 +202,7 @@ const Home = () => {
                   <p className="text-sm font-medium leading-relaxed text-[hsla(210,20%,40%,1)]">
                     {project.desc}
                   </p>
-                  <Link to="/projets" className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] group-hover:gap-3 transition-all">
+                  <Link to={project.path} className="inline-flex items-center gap-2 text-sm font-bold text-[#1A3A5C] group-hover:gap-3 transition-all">
                     Voir le projet <ArrowRight size={16} />
                   </Link>
                 </div>

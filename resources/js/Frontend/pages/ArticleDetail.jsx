@@ -1,19 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Calendar, User, Clock, Share2, Send,
   ArrowRight, MessageSquare, Search, ChevronRight,
-  Quote, CheckCircle2, Lightbulb, Link as LinkIcon, Camera
+  Quote, CheckCircle2, Lightbulb, Link as LinkIcon, Camera, Loader2
 } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import { Input, Textarea } from '../../Components/ui/Input';
+import api from '../../utils/api';
 
 const ArticleDetail = () => {
   const { id } = useParams();
 
+  const [articleData, setArticleData] = useState(null);
+  const [relatedArticlesData, setRelatedArticlesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/blog/${id}`);
+        setArticleData(response.data);
+      } catch (e) {
+        setArticleData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchRelated = async () => {
+      const categorySlug = articleData?.category?.slug;
+      if (!categorySlug) return;
+      try {
+        const response = await api.get('/blog', { params: { category: categorySlug } });
+        const list = (response.data || []).filter((p) => p.slug !== articleData.slug).slice(0, 2);
+        setRelatedArticlesData(list);
+      } catch (e) {
+        setRelatedArticlesData([]);
+      }
+    };
+    fetchRelated();
+  }, [articleData?.category?.slug, articleData?.slug]);
+
   // Static article data
-  const article = {
+  const fallbackArticle = {
     title: 'Les Nouvelles Techniques de Construction Durable en Guinée : Innovation et Écologie au Service de l\'Architecture',
     category: 'Construction',
     categorySlug: 'construction',
@@ -101,12 +136,23 @@ const ArticleDetail = () => {
     ]
   };
 
+  const article = articleData || fallbackArticle;
+  const relatedArticles = relatedArticlesData.length ? relatedArticlesData : (article.relatedArticles || []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="animate-spin text-[#1A3A5C]" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24">
       {/* Article Header */}
       <section className="relative h-[60vh] min-h-[500px] flex items-end pb-16 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src={article.mainImage} alt={article.title} className="w-full h-full object-cover" />
+          <img src={article.image_path || article.mainImage} alt={article.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A3A5C] via-[#1A3A5C]/60 to-transparent" />
         </div>
         <div className="container relative z-10 px-4 lg:px-8 space-y-8">
@@ -115,12 +161,12 @@ const ArticleDetail = () => {
             <ChevronRight size={14} />
             <Link to="/blog" className="hover:text-white transition-colors">Blog</Link>
             <ChevronRight size={14} />
-            <span className="text-white">{article.category}</span>
+            <span className="text-white">{article?.category?.name || article.category}</span>
           </div>
 
           <div className="space-y-6 max-w-5xl">
             <div className="inline-block px-4 py-1 rounded-full bg-[#4A8BC2] text-white text-xs font-bold uppercase tracking-wider">
-              {article.category}
+              {article?.category?.name || article.category}
             </div>
             <h1 className="text-3xl lg:text-6xl font-bold text-white leading-tight">
               {article.title}
@@ -128,19 +174,27 @@ const ArticleDetail = () => {
 
             <div className="flex flex-wrap items-center gap-8 pt-4">
               <div className="flex items-center gap-3">
-                <img src={article.authorAvatar} alt={article.author} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                {article.authorAvatar ? (
+                  <img src={article.authorAvatar} alt={article.author} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center text-white font-bold">
+                    {(article?.author?.name || article.author || 'A').slice(0, 1)}
+                  </div>
+                )}
                 <div>
-                  <p className="text-white font-bold">{article.author}</p>
-                  <p className="text-white/60 text-xs uppercase tracking-widest">{article.authorRole}</p>
+                  <p className="text-white font-bold">{article?.author?.name || article.author}</p>
+                  {article.authorRole ? (
+                    <p className="text-white/60 text-xs uppercase tracking-widest">{article.authorRole}</p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
                 <Calendar size={18} />
-                {article.date}
+                {article?.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : article.date}
               </div>
               <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
                 <Clock size={18} />
-                {article.readTime}
+                {article?.reading_time ? `${article.reading_time} min de lecture` : article.readTime}
               </div>
             </div>
           </div>
@@ -152,44 +206,48 @@ const ArticleDetail = () => {
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-12">
             <div className="prose prose-lg prose-slate max-w-none">
-              {article.content.map((block, idx) => {
-                if (block.type === 'text') return <p key={idx} className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed mb-8">{block.value}</p>;
-                if (block.type === 'heading') return <h2 key={idx} className="text-3xl font-bold text-[#1A3A5C] mt-12 mb-6">{block.value}</h2>;
-                if (block.type === 'image') return (
-                  <figure key={idx} className="my-12 space-y-4">
-                    <div className="rounded-[32px] overflow-hidden shadow-xl">
-                      <img src={block.url} alt={block.caption} className="w-full h-auto" />
+              {Array.isArray(article.content) ? (
+                article.content.map((block, idx) => {
+                  if (block.type === 'text') return <p key={idx} className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed mb-8">{block.value}</p>;
+                  if (block.type === 'heading') return <h2 key={idx} className="text-3xl font-bold text-[#1A3A5C] mt-12 mb-6">{block.value}</h2>;
+                  if (block.type === 'image') return (
+                    <figure key={idx} className="my-12 space-y-4">
+                      <div className="rounded-[32px] overflow-hidden shadow-xl">
+                        <img src={block.url} alt={block.caption} className="w-full h-auto" />
+                      </div>
+                      <figcaption className="text-center text-sm font-medium text-[hsla(210,20%,60%,1)] italic">{block.caption}</figcaption>
+                    </figure>
+                  );
+                  if (block.type === 'list') return (
+                    <ul key={idx} className="space-y-4 my-8">
+                      {block.items.map((item, i) => (
+                        <li key={i} className="flex gap-4 text-lg font-medium text-[hsla(210,20%,40%,1)]">
+                          <CheckCircle2 size={24} className="text-[#4A8BC2] shrink-0 mt-1" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                  if (block.type === 'quote') return (
+                    <div key={idx} className="my-12 p-10 bg-[hsla(210,25%,98%,1)] rounded-[40px] border-l-8 border-[#4A8BC2] relative overflow-hidden">
+                      <Quote size={80} className="absolute -top-4 -right-4 text-[#4A8BC2] opacity-10" />
+                      <p className="text-2xl font-bold italic text-[#1A3A5C] leading-relaxed relative z-10">"{block.text}"</p>
+                      <p className="mt-4 font-bold text-[#4A8BC2] uppercase tracking-widest text-sm">— {block.author}</p>
                     </div>
-                    <figcaption className="text-center text-sm font-medium text-[hsla(210,20%,60%,1)] italic">{block.caption}</figcaption>
-                  </figure>
-                );
-                if (block.type === 'list') return (
-                  <ul key={idx} className="space-y-4 my-8">
-                    {block.items.map((item, i) => (
-                      <li key={i} className="flex gap-4 text-lg font-medium text-[hsla(210,20%,40%,1)]">
-                        <CheckCircle2 size={24} className="text-[#4A8BC2] shrink-0 mt-1" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                );
-                if (block.type === 'quote') return (
-                  <div key={idx} className="my-12 p-10 bg-[hsla(210,25%,98%,1)] rounded-[40px] border-l-8 border-[#4A8BC2] relative overflow-hidden">
-                    <Quote size={80} className="absolute -top-4 -right-4 text-[#4A8BC2] opacity-10" />
-                    <p className="text-2xl font-bold italic text-[#1A3A5C] leading-relaxed relative z-10">"{block.text}"</p>
-                    <p className="mt-4 font-bold text-[#4A8BC2] uppercase tracking-widest text-sm">— {block.author}</p>
-                  </div>
-                );
-                return null;
-              })}
+                  );
+                  return null;
+                })
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+              )}
             </div>
 
             {/* Tags */}
             <div className="pt-8 border-t border-[#E0E6ED] flex flex-wrap gap-3">
               <span className="text-sm font-bold text-[#1A3A5C] mr-2">Mots-clés :</span>
-              {article.tags.map((tag, idx) => (
+              {(article.tags || []).map((tag, idx) => (
                 <span key={idx} className="px-4 py-1.5 rounded-full bg-[hsla(210,25%,98%,1)] border border-[#E0E6ED] text-xs font-bold text-[hsla(210,20%,40%,1)] hover:bg-[#1A3A5C] hover:text-white transition-all cursor-pointer">
-                  {tag}
+                  {typeof tag === 'string' ? tag : tag.name}
                 </span>
               ))}
             </div>
@@ -232,15 +290,21 @@ const ArticleDetail = () => {
             <div className="space-y-6">
               <h4 className="text-xl font-bold text-[#1A3A5C]">Articles Similaires</h4>
               <div className="space-y-6">
-                {article.relatedArticles.map((item) => (
-                  <Link key={item.id} to={`/blog/${item.id}`} className="flex gap-4 group">
+                {relatedArticles.map((item) => (
+                  <Link key={item.id} to={`/blog/${item.slug || item.id}`} className="flex gap-4 group">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                      <img
+                        src={item.image_path || item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-[#4A8BC2] uppercase tracking-widest">{item.category}</span>
+                      <span className="text-[10px] font-bold text-[#4A8BC2] uppercase tracking-widest">{item?.category?.name || item.category}</span>
                       <h5 className="text-sm font-bold text-[#1A3A5C] line-clamp-2 group-hover:text-[#4A8BC2] transition-colors">{item.title}</h5>
-                      <p className="text-[10px] font-medium text-[hsla(210,20%,60%,1)] uppercase tracking-widest">{item.date}</p>
+                      <p className="text-[10px] font-medium text-[hsla(210,20%,60%,1)] uppercase tracking-widest">
+                        {item?.published_at ? new Date(item.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : item.date}
+                      </p>
                     </div>
                   </Link>
                 ))}
@@ -293,4 +357,3 @@ const ArticleDetail = () => {
 };
 
 export default ArticleDetail;
-

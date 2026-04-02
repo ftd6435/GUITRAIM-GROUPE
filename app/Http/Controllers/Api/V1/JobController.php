@@ -26,7 +26,14 @@ class JobController extends Controller
 
     public function show($id)
     {
-        $job = JobOffer::with(['sector', 'createdBy', 'updatedBy'])->findOrFail($id);
+        $query = JobOffer::with(['sector', 'createdBy', 'updatedBy'])->whereKey($id);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('is_visible', true);
+        }
+
+        $job = $query->firstOrFail();
+
 
         return $this->successResponse($job);
     }

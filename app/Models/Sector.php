@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sector extends Model
 {
-    protected $fillable = ['is_visible', 'name', 'slug', 'description', 'icon', 'created_by', 'updated_by'];
+    protected $fillable = ['is_visible', 'name', 'slug', 'description', 'highlight_title', 'highlight_items', 'icon', 'created_by', 'updated_by'];
+
+    protected $casts = [
+        'highlight_items' => 'array',
+        'is_visible' => 'boolean',
+    ];
 
     public function services()
     {

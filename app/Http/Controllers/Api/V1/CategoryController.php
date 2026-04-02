@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,13 @@ class CategoryController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Category::with(['createdBy', 'updatedBy'])->get());
+        $query = Category::with(['createdBy', 'updatedBy']);
+
+        if (! Auth::guard('sanctum')->check()) {
+            $query->where('status', true);
+        }
+
+        return $this->successResponse($query->get());
     }
 
     public function store(Request $request)

@@ -30,6 +30,10 @@ class SettingController extends Controller
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:150',
             'working_hours' => 'nullable|string|max:150',
+            'facebook_url' => 'nullable|url|max:255',
+            'linkedin_url' => 'nullable|url|max:255',
+            'x_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
         ]);
 
         if ($request->hasFile('logo')) {

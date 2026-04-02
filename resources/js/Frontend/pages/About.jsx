@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Target, Eye, Shield, Users, Award, TrendingUp, ArrowRight, Lightbulb, HeartHandshake, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import Reveal from '../components/Reveal';
 import Counter from '../components/Counter';
+import api from '../../utils/api';
 
 const About = () => {
+  const [page, setPage] = useState(null);
+  const [loadingPage, setLoadingPage] = useState(true);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        setLoadingPage(true);
+        const response = await api.get('/pages/a-propos');
+        setPage(response.data || null);
+      } catch (e) {
+        setPage(null);
+      } finally {
+        setLoadingPage(false);
+      }
+    };
+    fetchPage();
+  }, []);
+
   const values = [
     {
       icon: <Award size={32} />,
@@ -64,36 +83,47 @@ const About = () => {
         </div>
       </section>
 
-      {/* Notre Histoire Section */}
-      <section className="flex justify-center w-full py-24">
-        <Reveal className="container px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
-              <h2 className="text-3xl lg:text-5xl font-bold text-[#1A3A5C]">Notre Histoire</h2>
-              <div className="space-y-6 text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
-                <p>
-                  Fondé il y a plus de deux décennies, GUITRAIM GROUPE est né de la vision ambitieuse de contribuer activement au développement économique et infrastructurel de la Guinée. Depuis nos modestes débuts dans le secteur de la construction, nous avons progressivement élargi notre expertise pour devenir un acteur multi-services reconnu.
-                </p>
-                <p>
-                  Au fil des années, notre groupe s'est développé de manière stratégique, investissant dans quatre secteurs complémentaires : la construction et le BTP, l'immobilier et le développement foncier, le transport et la logistique, ainsi que les solutions technologiques. Cette diversification nous permet d'offrir à nos clients des solutions intégrées et complètes.
-                </p>
-                <p>
-                  Parmi nos réalisations emblématiques, nous comptons la construction du Centre d'Affaires de Kaloum, le développement de la Résidence Les Palmiers, et la mise en place du Hub Logistique National qui connecte efficacement Conakry aux régions de l'intérieur du pays.
-                </p>
+      {!loadingPage && page?.content ? (
+        <section className="flex justify-center w-full py-24">
+          <Reveal className="container px-4 sm:px-6 lg:px-8">
+            <div
+              className="max-w-4xl mx-auto text-[hsla(210,20%,40%,1)] font-medium leading-relaxed space-y-4"
+              dangerouslySetInnerHTML={{ __html: page.content }}
+            />
+          </Reveal>
+        </section>
+      ) : (
+        <>
+          {/* Notre Histoire Section */}
+          <section className="flex justify-center w-full py-24">
+            <Reveal className="container px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div className="space-y-8">
+                  <h2 className="text-3xl lg:text-5xl font-bold text-[#1A3A5C]">Notre Histoire</h2>
+                  <div className="space-y-6 text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+                    <p>
+                      Fondé il y a plus de deux décennies, GUITRAIM GROUPE est né de la vision ambitieuse de contribuer activement au développement économique et infrastructurel de la Guinée. Depuis nos modestes débuts dans le secteur de la construction, nous avons progressivement élargi notre expertise pour devenir un acteur multi-services reconnu.
+                    </p>
+                    <p>
+                      Au fil des années, notre groupe s'est développé de manière stratégique, investissant dans quatre secteurs complémentaires : la construction et le BTP, l'immobilier et le développement foncier, le transport et la logistique, ainsi que les solutions technologiques. Cette diversification nous permet d'offrir à nos clients des solutions intégrées et complètes.
+                    </p>
+                    <p>
+                      Parmi nos réalisations emblématiques, nous comptons la construction du Centre d'Affaires de Kaloum, le développement de la Résidence Les Palmiers, et la mise en place du Hub Logistique National qui connecte efficacement Conakry aux régions de l'intérieur du pays.
+                    </p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <div className="aspect-[4/3] rounded-[48px] overflow-hidden shadow-2xl">
+                    <img
+                      src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1000&auto=format&fit=crop"
+                      alt="Notre Équipe"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="relative">
-              <div className="aspect-[4/3] rounded-[48px] overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1000&auto=format&fit=crop"
-                  alt="Notre Équipe"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
+            </Reveal>
+          </section>
 
       {/* Notre Vision Section */}
       <section className="flex justify-center w-full py-24">
@@ -194,6 +224,8 @@ const About = () => {
           </Reveal>
         </div>
       </section>
+        </>
+      )}
     </div>
   );
 };

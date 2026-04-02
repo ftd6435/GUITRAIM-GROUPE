@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Globe, Phone, Mail, MapPin, Share2, Upload } from 'lucide-react';
+import { Save, Loader2, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Input, Textarea } from '../../Components/ui/Input';
@@ -9,13 +9,13 @@ import LoadingSpinner from '../../Components/ui/LoadingSpinner';
 const Settings = () => {
   const [settings, setSettings] = useState({
     site_name: '',
-    site_description: '',
-    contact_email: '',
-    contact_phone: '',
     address: '',
+    phone: '',
+    email: '',
+    working_hours: '',
     facebook_url: '',
-    twitter_url: '',
     linkedin_url: '',
+    x_url: '',
     instagram_url: '',
   });
   const [loading, setLoading] = useState(true);
@@ -27,16 +27,19 @@ const Settings = () => {
       try {
         setLoading(true);
         const response = await api.get('/settings');
-        // Assuming response.data is an object with key-value pairs or a collection
-        if (response.data) {
-          const newSettings = { ...settings };
-          response.data.forEach(s => {
-            if (newSettings.hasOwnProperty(s.key)) {
-              newSettings[s.key] = s.value;
-            }
-          });
-          setSettings(newSettings);
-        }
+        const data = response?.data || {};
+        setSettings((prev) => ({
+          ...prev,
+          site_name: data.site_name || '',
+          address: data.address || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          working_hours: data.working_hours || '',
+          facebook_url: data.facebook_url || '',
+          linkedin_url: data.linkedin_url || '',
+          x_url: data.x_url || '',
+          instagram_url: data.instagram_url || '',
+        }));
       } catch (error) {
         console.error('Échec de la récupération des paramètres');
       } finally {
@@ -52,8 +55,21 @@ const Settings = () => {
     setSubmitting(true);
     setErrors({});
     try {
-      await api.put('/settings', { settings });
-      alert('Paramètres mis à jour avec succès !');
+      const response = await api.put('/settings', settings);
+      if (response?.data) {
+        setSettings((prev) => ({
+          ...prev,
+          site_name: response.data.site_name || '',
+          address: response.data.address || '',
+          phone: response.data.phone || '',
+          email: response.data.email || '',
+          working_hours: response.data.working_hours || '',
+          facebook_url: response.data.facebook_url || '',
+          linkedin_url: response.data.linkedin_url || '',
+          x_url: response.data.x_url || '',
+          instagram_url: response.data.instagram_url || '',
+        }));
+      }
     } catch (error) {
       if (error.errors) setErrors(error.errors);
     } finally {
@@ -86,14 +102,7 @@ const Settings = () => {
                 label="Nom du Site"
                 value={settings.site_name}
                 onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
-                error={errors['settings.site_name']?.[0]}
-              />
-              <Textarea
-                label="Description du Site"
-                value={settings.site_description}
-                onChange={(e) => setSettings({ ...settings, site_description: e.target.value })}
-                error={errors['settings.site_description']?.[0]}
-                rows={3}
+                error={errors.site_name?.[0]}
               />
             </CardContent>
           </Card>
@@ -130,59 +139,76 @@ const Settings = () => {
                 label="Email de Contact"
                 type="email"
                 icon={Mail}
-                value={settings.contact_email}
-                onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
-                error={errors['settings.contact_email']?.[0]}
+                value={settings.email}
+                onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                error={errors.email?.[0]}
               />
               <Input
                 label="Numéro de Téléphone"
                 icon={Phone}
-                value={settings.contact_phone}
-                onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
-                error={errors['settings.contact_phone']?.[0]}
+                value={settings.phone}
+                onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                error={errors.phone?.[0]}
               />
               <Textarea
                 label="Adresse du Bureau"
                 icon={MapPin}
                 value={settings.address}
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                error={errors['settings.address']?.[0]}
+                error={errors.address?.[0]}
                 rows={2}
+              />
+              <Textarea
+                label="Horaires"
+                icon={Clock}
+                value={settings.working_hours}
+                onChange={(e) => setSettings({ ...settings, working_hours: e.target.value })}
+                error={errors.working_hours?.[0]}
+                rows={3}
               />
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader title="Liens Sociaux" subtitle="Connectez vos profils de réseaux sociaux" />
+            <CardHeader title="Réseaux Sociaux" subtitle="Liens de vos profils sociaux" />
             <CardContent className="space-y-4">
               <Input
-                label="URL Facebook"
+                label="Facebook"
+                placeholder="https://facebook.com/..."
                 value={settings.facebook_url}
                 onChange={(e) => setSettings({ ...settings, facebook_url: e.target.value })}
+                error={errors.facebook_url?.[0]}
               />
               <Input
-                label="URL Twitter"
-                value={settings.twitter_url}
-                onChange={(e) => setSettings({ ...settings, twitter_url: e.target.value })}
-              />
-              <Input
-                label="URL LinkedIn"
+                label="LinkedIn"
+                placeholder="https://linkedin.com/..."
                 value={settings.linkedin_url}
                 onChange={(e) => setSettings({ ...settings, linkedin_url: e.target.value })}
+                error={errors.linkedin_url?.[0]}
               />
               <Input
-                label="URL Instagram"
+                label="X"
+                placeholder="https://x.com/..."
+                value={settings.x_url}
+                onChange={(e) => setSettings({ ...settings, x_url: e.target.value })}
+                error={errors.x_url?.[0]}
+              />
+              <Input
+                label="Instagram"
+                placeholder="https://instagram.com/..."
                 value={settings.instagram_url}
                 onChange={(e) => setSettings({ ...settings, instagram_url: e.target.value })}
+                error={errors.instagram_url?.[0]}
               />
             </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button type="submit" disabled={submitting} className="gap-2">
-                {submitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                Enregistrer les Paramètres
-              </Button>
-            </CardFooter>
           </Card>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={submitting} className="gap-2">
+              {submitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Enregistrer les Paramètres
+            </Button>
+          </div>
         </div>
       </form>
     </div>
@@ -190,4 +216,3 @@ const Settings = () => {
 };
 
 export default Settings;
-

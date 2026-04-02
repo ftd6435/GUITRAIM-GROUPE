@@ -6,10 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'description', 'content', 'image'];
+    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'description', 'content', 'image', 'created_by', 'updated_by'];
 
     public function sector()
     {
         return $this->belongsTo(Sector::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

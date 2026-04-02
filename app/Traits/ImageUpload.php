@@ -9,18 +9,19 @@ trait ImageUpload
 {
     public function imageUpload($image, $path = null)
     {
-        $imageName = Str::uuid() . '.' . $image->getClientOriginalExtension();
-        $fullPath = 'images/' . $path;
+        $imageName = Str::uuid().'.'.$image->getClientOriginalExtension();
+        $fullPath = 'images/'.$path;
 
         Storage::disk('public')->putFileAs($fullPath, $image, $imageName);
+
         return $imageName;
     }
 
     public function fileUpload($file, $path = null)
     {
-        $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $fileName = Str::uuid().'.'.$file->getClientOriginalExtension();
 
-        $fullPath = 'files/' . $path;
+        $fullPath = 'files/'.$path;
 
         Storage::disk('public')->putFileAs($fullPath, $file, $fileName);
 
@@ -29,19 +30,19 @@ trait ImageUpload
 
     public function deleteImage($image, $path = null)
     {
-        $fullPath = 'images/' . $path;
+        $fullPath = 'images/'.$path;
 
-        if (Storage::disk('public')->exists($fullPath . $image)) {
-            Storage::disk('public')->delete($fullPath . $image);
+        if (Storage::disk('public')->exists($fullPath.$image)) {
+            Storage::disk('public')->delete($fullPath.$image);
         }
     }
 
     public function deleteFile($file, $path = null)
     {
-        $fullPath = 'files/' . $path;
+        $fullPath = 'files/'.$path;
 
-        if (Storage::disk('public')->exists($fullPath . $file)) {
-            Storage::disk('public')->delete($fullPath . $file);
+        if (Storage::disk('public')->exists($fullPath.$file)) {
+            Storage::disk('public')->delete($fullPath.$file);
         }
     }
 }

@@ -7,8 +7,8 @@ use App\Models\Service;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
@@ -16,7 +16,7 @@ class ServiceController extends Controller
 
     public function index(Request $request)
     {
-        $query = Service::with('sector');
+        $query = Service::with(['sector', 'createdBy', 'updatedBy']);
 
         if ($request->has('sector')) {
             $query->whereHas('sector', function ($q) use ($request) {
@@ -33,7 +33,8 @@ class ServiceController extends Controller
 
     public function show($slug)
     {
-        $service = Service::with('sector')->where('slug', $slug)->firstOrFail();
+        $service = Service::with(['sector', 'createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+
         return $this->successResponse($service);
     }
 
@@ -48,13 +49,16 @@ class ServiceController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['title']);
+        $validated['created_by'] = Auth::id();
+        $validated['updated_by'] = Auth::id();
 
         if ($request->hasFile('image')) {
             $validated['image'] = $this->imageUpload($request->file('image'), 'services');
         }
 
         $service = Service::create($validated);
-        return $this->successResponse($service, 'Service créé avec succès', 201);
+
+        return $this->successResponse($service->load(['sector', 'createdBy', 'updatedBy']), 'Service créé avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -80,8 +84,10 @@ class ServiceController extends Controller
             $validated['image'] = $this->imageUpload($request->file('image'), 'services');
         }
 
+        $validated['updated_by'] = Auth::id();
         $service->update($validated);
-        return $this->successResponse($service, 'Service mis à jour');
+
+        return $this->successResponse($service->fresh()->load(['sector', 'createdBy', 'updatedBy']), 'Service mis à jour');
     }
 
     public function destroy($id)
@@ -91,6 +97,7 @@ class ServiceController extends Controller
             $this->deleteImage($service->image, 'services/');
         }
         $service->delete();
+
         return $this->noContentSuccessResponse('Service supprimé');
     }
 }

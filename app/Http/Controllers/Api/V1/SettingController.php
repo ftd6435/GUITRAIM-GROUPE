@@ -14,7 +14,8 @@ class SettingController extends Controller
 
     public function index()
     {
-        $settings = Setting::first();
+        $settings = Setting::with(['createdBy', 'updatedBy'])->first();
+
         return $this->successResponse($settings);
     }
 
@@ -38,8 +39,12 @@ class SettingController extends Controller
             $validated['logo'] = $this->imageUpload($request->file('logo'), 'settings');
         }
 
+        if (! $settings->created_by) {
+            $validated['created_by'] = $request->user()->id;
+        }
+        $validated['updated_by'] = $request->user()->id;
         $settings->update($validated);
 
-        return $this->successResponse($settings, 'Paramètres mis à jour avec succès');
+        return $this->successResponse($settings->fresh()->load(['createdBy', 'updatedBy']), 'Paramètres mis à jour avec succès');
     }
 }

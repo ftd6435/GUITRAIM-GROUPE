@@ -13,7 +13,7 @@ class NewsletterController extends Controller
 
     public function index()
     {
-        return $this->successResponse(NewsletterSubscriber::latest()->get());
+        return $this->successResponse(NewsletterSubscriber::with(['createdBy', 'updatedBy'])->latest()->get());
     }
 
     public function subscribe(Request $request)
@@ -22,19 +22,23 @@ class NewsletterController extends Controller
             'email' => 'required|email|unique:newsletter_subscribers,email',
         ]);
 
+        $userId = $request->user()?->id;
         $subscriber = NewsletterSubscriber::create([
             'email' => $validated['email'],
             'is_active' => true,
             'subscribed_at' => now(),
+            'created_by' => $userId,
+            'updated_by' => $userId,
         ]);
 
-        return $this->successResponse($subscriber, 'Inscription réussie', 201);
+        return $this->successResponse($subscriber->load(['createdBy', 'updatedBy']), 'Inscription réussie', 201);
     }
 
     public function destroy($id)
     {
         $subscriber = NewsletterSubscriber::findOrFail($id);
         $subscriber->delete();
+
         return $this->noContentSuccessResponse('Désinscription réussie');
     }
 }

@@ -15,7 +15,7 @@ class TestimonialController extends Controller
 
     public function index()
     {
-        $query = Testimonial::query();
+        $query = Testimonial::with(['createdBy', 'updatedBy']);
 
         if (! Auth::guard('sanctum')->check()) {
             $query->where('is_visible', true);
@@ -45,8 +45,11 @@ class TestimonialController extends Controller
             $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
         $testimonial = Testimonial::create($validated);
-        return $this->successResponse($testimonial, 'Témoignage ajouté avec succès', 201);
+
+        return $this->successResponse($testimonial->load(['createdBy', 'updatedBy']), 'Témoignage ajouté avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -78,8 +81,10 @@ class TestimonialController extends Controller
             $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
+        $validated['updated_by'] = $request->user()->id;
         $testimonial->update($validated);
-        return $this->successResponse($testimonial, 'Témoignage mis à jour');
+
+        return $this->successResponse($testimonial->fresh()->load(['createdBy', 'updatedBy']), 'Témoignage mis à jour');
     }
 
     public function destroy($id)
@@ -92,6 +97,7 @@ class TestimonialController extends Controller
             $this->deleteImage($testimonial->avatar, 'avatars/');
         }
         $testimonial->delete();
+
         return $this->noContentSuccessResponse('Témoignage supprimé');
     }
 }

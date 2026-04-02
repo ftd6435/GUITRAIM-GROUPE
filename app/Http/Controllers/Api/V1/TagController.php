@@ -14,7 +14,7 @@ class TagController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Tag::all());
+        return $this->successResponse(Tag::with(['createdBy', 'updatedBy'])->get());
     }
 
     public function store(Request $request)
@@ -24,15 +24,19 @@ class TagController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
 
         $tag = Tag::create($validated);
-        return $this->successResponse($tag, 'Tag créé avec succès', 201);
+
+        return $this->successResponse($tag->load(['createdBy', 'updatedBy']), 'Tag créé avec succès', 201);
     }
 
     public function destroy($id)
     {
         $tag = Tag::findOrFail($id);
         $tag->delete();
+
         return $this->noContentSuccessResponse('Tag supprimé');
     }
 }

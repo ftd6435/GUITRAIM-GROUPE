@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
-    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'location', 'year', 'description', 'content', 'featured'];
+    protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'location', 'year', 'description', 'content', 'featured', 'created_by', 'updated_by'];
 
     public function sector()
     {
@@ -21,5 +21,15 @@ class Project extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'project_tags');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

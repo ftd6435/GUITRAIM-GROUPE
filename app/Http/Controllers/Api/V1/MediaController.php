@@ -14,7 +14,7 @@ class MediaController extends Controller
 
     public function index()
     {
-        return $this->successResponse(MediaLibrary::with('user')->latest()->get());
+        return $this->successResponse(MediaLibrary::with(['user', 'createdBy', 'updatedBy'])->latest()->get());
     }
 
     public function upload(Request $request)
@@ -36,9 +36,11 @@ class MediaController extends Controller
             'file_type' => $fileType,
             'alt_text' => $request->alt_text,
             'uploaded_by' => $request->user()->id,
+            'created_by' => $request->user()->id,
+            'updated_by' => $request->user()->id,
         ]);
 
-        return $this->successResponse($media, 'Fichier téléchargé avec succès', 201);
+        return $this->successResponse($media->load(['user', 'createdBy', 'updatedBy']), 'Fichier téléchargé avec succès', 201);
     }
 
     public function destroy($id)
@@ -46,6 +48,7 @@ class MediaController extends Controller
         $media = MediaLibrary::findOrFail($id);
         $this->deleteFile($media->file_url, 'library/');
         $media->delete();
+
         return $this->noContentSuccessResponse('Fichier supprimé');
     }
 
@@ -55,9 +58,15 @@ class MediaController extends Controller
         $videos = ['mp4', 'mov', 'avi', 'wmv'];
         $docs = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'];
 
-        if (in_array(strtolower($extension), $images)) return 'image';
-        if (in_array(strtolower($extension), $videos)) return 'video';
-        if (in_array(strtolower($extension), $docs)) return 'pdf';
+        if (in_array(strtolower($extension), $images)) {
+            return 'image';
+        }
+        if (in_array(strtolower($extension), $videos)) {
+            return 'video';
+        }
+        if (in_array(strtolower($extension), $docs)) {
+            return 'pdf';
+        }
 
         return 'other';
     }

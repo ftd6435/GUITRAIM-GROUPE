@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\JobOffer;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class JobController extends Controller
 {
@@ -15,7 +15,7 @@ class JobController extends Controller
 
     public function index()
     {
-        $query = JobOffer::with('sector');
+        $query = JobOffer::with(['sector', 'createdBy', 'updatedBy']);
 
         if (! Auth::guard('sanctum')->check()) {
             $query->where('is_visible', true);
@@ -26,7 +26,8 @@ class JobController extends Controller
 
     public function show($id)
     {
-        $job = JobOffer::with('sector')->findOrFail($id);
+        $job = JobOffer::with(['sector', 'createdBy', 'updatedBy'])->findOrFail($id);
+
         return $this->successResponse($job);
     }
 
@@ -42,8 +43,11 @@ class JobController extends Controller
             'published_at' => 'nullable|date',
         ]);
 
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
         $job = JobOffer::create($validated);
-        return $this->successResponse($job, 'Offre d\'emploi créée avec succès', 201);
+
+        return $this->successResponse($job->load(['sector', 'createdBy', 'updatedBy']), 'Offre d\'emploi créée avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -60,14 +64,17 @@ class JobController extends Controller
             'published_at' => 'nullable|date',
         ]);
 
+        $validated['updated_by'] = $request->user()->id;
         $job->update($validated);
-        return $this->successResponse($job, 'Offre d\'emploi mise à jour');
+
+        return $this->successResponse($job->fresh()->load(['sector', 'createdBy', 'updatedBy']), 'Offre d\'emploi mise à jour');
     }
 
     public function destroy($id)
     {
         $job = JobOffer::findOrFail($id);
         $job->delete();
+
         return $this->noContentSuccessResponse('Offre d\'emploi supprimée');
     }
 }

@@ -6,5 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    protected $fillable = ['site_name', 'logo', 'address', 'phone', 'email', 'working_hours'];
+    protected $fillable = ['site_name', 'logo', 'address', 'phone', 'email', 'working_hours', 'created_by', 'updated_by'];
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

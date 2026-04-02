@@ -15,7 +15,7 @@ class BlogController extends Controller
 
     public function index(Request $request)
     {
-        $query = BlogPost::with(['author', 'category', 'tags']);
+        $query = BlogPost::with(['author', 'category', 'tags', 'createdBy', 'updatedBy']);
 
         if ($request->has('category')) {
             $query->whereHas('category', function ($q) use ($request) {
@@ -34,7 +34,8 @@ class BlogController extends Controller
 
     public function show($slug)
     {
-        $post = BlogPost::with(['author', 'category', 'tags'])->where('slug', $slug)->firstOrFail();
+        $post = BlogPost::with(['author', 'category', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+
         return $this->successResponse($post);
     }
 
@@ -53,6 +54,8 @@ class BlogController extends Controller
 
         $validated['slug'] = Str::slug($validated['title']);
         $validated['author_id'] = $request->user()->id;
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
 
         if ($request->hasFile('image')) {
             $validated['image'] = $this->imageUpload($request->file('image'), 'blog');
@@ -64,7 +67,7 @@ class BlogController extends Controller
             $post->tags()->sync($request->tags);
         }
 
-        return $this->successResponse($post->load(['author', 'category', 'tags']), 'Article créé avec succès', 201);
+        return $this->successResponse($post->load(['author', 'category', 'tags', 'createdBy', 'updatedBy']), 'Article créé avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -93,13 +96,14 @@ class BlogController extends Controller
             $validated['image'] = $this->imageUpload($request->file('image'), 'blog');
         }
 
+        $validated['updated_by'] = $request->user()->id;
         $post->update($validated);
 
         if ($request->has('tags')) {
             $post->tags()->sync($request->tags);
         }
 
-        return $this->successResponse($post->load(['author', 'category', 'tags']), 'Article mis à jour');
+        return $this->successResponse($post->load(['author', 'category', 'tags', 'createdBy', 'updatedBy']), 'Article mis à jour');
     }
 
     public function destroy($id)
@@ -109,6 +113,7 @@ class BlogController extends Controller
             $this->deleteImage($post->image, 'blog/');
         }
         $post->delete();
+
         return $this->noContentSuccessResponse('Article supprimé');
     }
 }

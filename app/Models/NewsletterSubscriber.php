@@ -6,10 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class NewsletterSubscriber extends Model
 {
-    protected $fillable = ['email', 'is_active', 'subscribed_at'];
+    protected $fillable = ['email', 'is_active', 'subscribed_at', 'created_by', 'updated_by'];
 
     protected $casts = [
         'subscribed_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

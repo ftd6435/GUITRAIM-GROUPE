@@ -15,7 +15,7 @@ class PartnerController extends Controller
 
     public function index()
     {
-        $query = Partner::query();
+        $query = Partner::with(['createdBy', 'updatedBy']);
 
         if (! Auth::guard('sanctum')->check()) {
             $query->where('is_visible', true);
@@ -37,8 +37,11 @@ class PartnerController extends Controller
             $validated['logo'] = $this->imageUpload($request->file('logo'), 'partners');
         }
 
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
         $partner = Partner::create($validated);
-        return $this->successResponse($partner, 'Partenaire ajouté avec succès', 201);
+
+        return $this->successResponse($partner->load(['createdBy', 'updatedBy']), 'Partenaire ajouté avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -59,8 +62,10 @@ class PartnerController extends Controller
             $validated['logo'] = $this->imageUpload($request->file('logo'), 'partners');
         }
 
+        $validated['updated_by'] = $request->user()->id;
         $partner->update($validated);
-        return $this->successResponse($partner, 'Partenaire mis à jour');
+
+        return $this->successResponse($partner->fresh()->load(['createdBy', 'updatedBy']), 'Partenaire mis à jour');
     }
 
     public function destroy($id)
@@ -70,6 +75,7 @@ class PartnerController extends Controller
             $this->deleteImage($partner->logo, 'partners/');
         }
         $partner->delete();
+
         return $this->noContentSuccessResponse('Partenaire supprimé');
     }
 }

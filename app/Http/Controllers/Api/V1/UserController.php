@@ -27,7 +27,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         $validated = $request->validate([
@@ -50,17 +50,18 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
 
         $user = User::create($validated);
+
         return $this->successResponse($user, 'Utilisateur créé avec succès', 201);
     }
 
     public function switchStatus(string $id)
     {
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->errorResponse('Utilisateur non trouvé', 404);
         }
 
@@ -70,7 +71,7 @@ class UserController extends Controller
             return $this->errorResponse('Vous n\'êtes pas autorisé à modifier ce profil', [], 403);
         }
 
-        $user->is_active = !$user->is_active;
+        $user->is_active = ! $user->is_active;
         $user->save();
 
         return $this->successResponse($user, 'Statut de l\'utilisateur modifié avec succès');
@@ -82,12 +83,12 @@ class UserController extends Controller
             'role' => ['required', Rule::in(['super_admin', 'admin', 'editor'])],
         ]);
 
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->errorResponse('Utilisateur non trouvé', 404);
         }
 
@@ -105,7 +106,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         // An auth user should neither be able to update another user's profile nor delete.
@@ -126,7 +127,7 @@ class UserController extends Controller
 
         // Check current password if updating password
         if (isset($validated['password'])) {
-            if (!Hash::check($validated['current_password'], $user->password)) {
+            if (! Hash::check($validated['current_password'], $user->password)) {
                 return $this->errorResponse('L\'ancien mot de passe est incorrect', ['current_password' => ['L\'ancien mot de passe est incorrect']], 422);
             }
             $validated['password'] = Hash::make($validated['password']);
@@ -161,12 +162,13 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+
         return $this->successResponse($user, 'Utilisateur mis à jour');
     }
 
     public function destroy(User $user)
     {
-        /** @var \App\Models\User $authUser */
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         // Only super_admin can delete another user
@@ -183,6 +185,7 @@ class UserController extends Controller
         }
 
         $user->delete();
+
         return $this->noContentSuccessResponse('Utilisateur supprimé');
     }
 }

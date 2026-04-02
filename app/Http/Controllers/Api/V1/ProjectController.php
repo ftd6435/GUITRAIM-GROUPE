@@ -7,9 +7,10 @@ use App\Models\Project;
 use App\Models\ProjectImage;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -17,7 +18,7 @@ class ProjectController extends Controller
 
     public function index(Request $request)
     {
-        $query = Project::with(['sector', 'images', 'tags']);
+        $query = Project::with(['sector', 'images', 'tags', 'createdBy', 'updatedBy']);
 
         if ($request->has('sector')) {
             $query->whereHas('sector', function ($q) use ($request) {
@@ -38,7 +39,8 @@ class ProjectController extends Controller
 
     public function show($slug)
     {
-        $project = Project::with(['sector', 'images', 'tags'])->where('slug', $slug)->firstOrFail();
+        $project = Project::with(['sector', 'images', 'tags', 'createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+
         return $this->successResponse($project);
     }
 
@@ -56,6 +58,8 @@ class ProjectController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['title']);
+        $validated['created_by'] = Auth::id();
+        $validated['updated_by'] = Auth::id();
 
         $project = Project::create($validated);
 
@@ -63,7 +67,7 @@ class ProjectController extends Controller
             $project->tags()->sync($request->tags);
         }
 
-        return $this->successResponse($project->load(['sector', 'tags']), 'Projet créé avec succès', 201);
+        return $this->successResponse($project->load(['sector', 'tags', 'createdBy', 'updatedBy']), 'Projet créé avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -85,13 +89,14 @@ class ProjectController extends Controller
             $validated['slug'] = Str::slug($validated['title']);
         }
 
+        $validated['updated_by'] = Auth::id();
         $project->update($validated);
 
         if ($request->has('tags')) {
             $project->tags()->sync($request->tags);
         }
 
-        return $this->successResponse($project->load(['sector', 'tags']), 'Projet mis à jour');
+        return $this->successResponse($project->load(['sector', 'tags', 'createdBy', 'updatedBy']), 'Projet mis à jour');
     }
 
     public function destroy($id)
@@ -101,6 +106,7 @@ class ProjectController extends Controller
             $this->deleteImage($image->image_url, 'projects/');
         }
         $project->delete();
+
         return $this->noContentSuccessResponse('Projet supprimé');
     }
 
@@ -118,11 +124,15 @@ class ProjectController extends Controller
             $projectImage = ProjectImage::create([
                 'project_id' => $project->id,
                 'image_url' => $imageName,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
             ]);
             $uploadedImages[] = $projectImage;
         }
 
-        return $this->successResponse($uploadedImages, 'Images téléchargées avec succès');
+        $uploadedImagesCollection = new Collection($uploadedImages);
+
+        return $this->successResponse($uploadedImagesCollection->load(['createdBy', 'updatedBy']), 'Images téléchargées avec succès');
     }
 
     public function destroyImage($id)
@@ -130,6 +140,7 @@ class ProjectController extends Controller
         $image = ProjectImage::findOrFail($id);
         $this->deleteImage($image->image_url, 'projects/');
         $image->delete();
+
         return $this->noContentSuccessResponse('Image supprimée');
     }
 }

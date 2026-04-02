@@ -13,7 +13,8 @@ class PageController extends Controller
 
     public function show($slug)
     {
-        $page = Page::where('slug', $slug)->firstOrFail();
+        $page = Page::with(['createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+
         return $this->successResponse($page);
     }
 
@@ -28,7 +29,9 @@ class PageController extends Controller
             'meta_description' => 'nullable|string',
         ]);
 
+        $validated['updated_by'] = $request->user()->id;
         $page->update($validated);
-        return $this->successResponse($page, 'Page mise à jour avec succès');
+
+        return $this->successResponse($page->fresh()->load(['createdBy', 'updatedBy']), 'Page mise à jour avec succès');
     }
 }

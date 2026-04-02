@@ -15,7 +15,7 @@ class CategoryController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Category::all());
+        return $this->successResponse(Category::with(['createdBy', 'updatedBy'])->get());
     }
 
     public function store(Request $request)
@@ -25,9 +25,12 @@ class CategoryController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
 
         $category = Category::create($validated);
-        return $this->successResponse($category, 'Catégorie créée avec succès', 201);
+
+        return $this->successResponse($category->load(['createdBy', 'updatedBy']), 'Catégorie créée avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -40,14 +43,17 @@ class CategoryController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
+        $validated['updated_by'] = $request->user()->id;
         $category->update($validated);
-        return $this->successResponse($category, 'Catégorie mise à jour');
+
+        return $this->successResponse($category->fresh()->load(['createdBy', 'updatedBy']), 'Catégorie mise à jour');
     }
 
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
         $category->delete();
+
         return $this->noContentSuccessResponse('Catégorie supprimée');
     }
 }

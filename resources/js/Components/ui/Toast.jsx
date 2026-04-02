@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, X, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/utils';
 
@@ -15,18 +15,34 @@ export const useToast = () => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = 'success', duration = 3000) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      removeToast(id);
-    }, duration);
-  }, []);
-
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  const addToast = useCallback(
+    (message, type = 'success', duration = 3000) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { id, message, type }]);
+
+      setTimeout(() => {
+        removeToast(id);
+      }, duration);
+    },
+    [removeToast]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handler = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.message) return;
+      addToast(detail.message, detail.type || 'success', detail.duration || 3000);
+    };
+
+    window.addEventListener('app-toast', handler);
+    return () => window.removeEventListener('app-toast', handler);
+  }, [addToast]);
 
   const success = (msg, dur) => addToast(msg, 'success', dur);
   const error = (msg, dur) => addToast(msg, 'error', dur);

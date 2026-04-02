@@ -14,12 +14,13 @@ class ApplicationController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Application::with('job')->latest()->get());
+        return $this->successResponse(Application::with(['job', 'createdBy', 'updatedBy'])->latest()->get());
     }
 
     public function show($id)
     {
-        $application = Application::with('job')->findOrFail($id);
+        $application = Application::with(['job', 'createdBy', 'updatedBy'])->findOrFail($id);
+
         return $this->successResponse($application);
     }
 
@@ -46,8 +47,12 @@ class ApplicationController extends Controller
             $validated['cover_letter_file'] = $this->fileUpload($request->file('cover_letter_file'), 'applications/letters');
         }
 
+        $userId = $request->user()?->id;
+        $validated['created_by'] = $userId;
+        $validated['updated_by'] = $userId;
         $application = Application::create($validated);
-        return $this->successResponse($application, 'Candidature envoyée avec succès', 201);
+
+        return $this->successResponse($application->load(['job', 'createdBy', 'updatedBy']), 'Candidature envoyée avec succès', 201);
     }
 
     public function destroy($id)
@@ -60,6 +65,7 @@ class ApplicationController extends Controller
             $this->deleteFile($application->cover_letter_file, 'applications/letters/');
         }
         $application->delete();
+
         return $this->noContentSuccessResponse('Candidature supprimée');
     }
 }

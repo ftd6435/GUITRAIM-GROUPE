@@ -13,7 +13,7 @@ class ContactController extends Controller
 
     public function index()
     {
-        return $this->successResponse(Contact::latest()->get());
+        return $this->successResponse(Contact::with(['createdBy', 'updatedBy'])->latest()->get());
     }
 
     public function store(Request $request)
@@ -27,14 +27,20 @@ class ContactController extends Controller
             'message' => 'required|string',
         ]);
 
+        $userId = $request->user()?->id;
+        $validated['created_by'] = $userId;
+        $validated['updated_by'] = $userId;
+
         $contact = Contact::create($validated);
-        return $this->successResponse($contact, 'Message envoyé avec succès', 201);
+
+        return $this->successResponse($contact->load(['createdBy', 'updatedBy']), 'Message envoyé avec succès', 201);
     }
 
     public function destroy($id)
     {
         $contact = Contact::findOrFail($id);
         $contact->delete();
+
         return $this->noContentSuccessResponse('Message supprimé');
     }
 }

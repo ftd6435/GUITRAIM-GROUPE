@@ -15,7 +15,7 @@ class TeamController extends Controller
 
     public function index(Request $request)
     {
-        $query = TeamMember::query();
+        $query = TeamMember::with(['createdBy', 'updatedBy']);
 
         if ($request->has('department')) {
             $query->where('department', $request->department);
@@ -49,8 +49,11 @@ class TeamController extends Controller
             $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
         $member = TeamMember::create($validated);
-        return $this->successResponse($member, 'Membre de l\'équipe ajouté avec succès', 201);
+
+        return $this->successResponse($member->load(['createdBy', 'updatedBy']), 'Membre de l\'équipe ajouté avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -82,8 +85,10 @@ class TeamController extends Controller
             $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
         }
 
+        $validated['updated_by'] = $request->user()->id;
         $member->update($validated);
-        return $this->successResponse($member, 'Membre de l\'équipe mis à jour');
+
+        return $this->successResponse($member->fresh()->load(['createdBy', 'updatedBy']), 'Membre de l\'équipe mis à jour');
     }
 
     public function destroy($id)
@@ -96,6 +101,7 @@ class TeamController extends Controller
             $this->deleteImage($member->avatar, 'avatars/');
         }
         $member->delete();
+
         return $this->noContentSuccessResponse('Membre de l\'équipe supprimé');
     }
 }

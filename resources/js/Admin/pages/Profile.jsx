@@ -5,10 +5,8 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Input } from '../../Components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../Components/ui/Card';
-import { useToast } from '../../Components/ui/Toast';
 
 const Profile = () => {
-  const toast = useToast();
   const [searchParams] = useSearchParams();
 
   const [user, setUser] = useState(null);
@@ -92,14 +90,12 @@ const Profile = () => {
       setUser(response.data);
       setIsEditing(false);
       setFormData({ ...formData, password: '', password_confirmation: '', current_password: '' });
-      toast.success(response.message || 'Profil mis à jour avec succès');
       // Refresh page to update layout
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (error) {
       if (error.errors) setErrors(error.errors);
-      toast.error(error.message || 'Une erreur est survenue');
     } finally {
       setSubmitting(false);
     }

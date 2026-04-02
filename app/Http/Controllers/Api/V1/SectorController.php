@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Sector;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class SectorController extends Controller
 {
@@ -16,14 +16,16 @@ class SectorController extends Controller
     public function index()
     {
         if (Auth::guard('sanctum')->check()) {
-            return $this->successResponse(Sector::all());
+            return $this->successResponse(Sector::with(['createdBy', 'updatedBy'])->get());
         }
-        return $this->successResponse(Sector::where('is_visible', true)->get());
+
+        return $this->successResponse(Sector::with(['createdBy', 'updatedBy'])->where('is_visible', true)->get());
     }
 
     public function show($slug)
     {
-        $sector = Sector::where('slug', $slug)->firstOrFail();
+        $sector = Sector::with(['createdBy', 'updatedBy'])->where('slug', $slug)->firstOrFail();
+
         return $this->successResponse($sector);
     }
 
@@ -36,9 +38,12 @@ class SectorController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['created_by'] = Auth::id();
+        $validated['updated_by'] = Auth::id();
 
         $sector = Sector::create($validated);
-        return $this->successResponse($sector, 'Secteur créé avec succès', 201);
+
+        return $this->successResponse($sector->load(['createdBy', 'updatedBy']), 'Secteur créé avec succès', 201);
     }
 
     public function update(Request $request, $id)
@@ -55,14 +60,17 @@ class SectorController extends Controller
             $validated['slug'] = Str::slug($validated['name']);
         }
 
+        $validated['updated_by'] = Auth::id();
         $sector->update($validated);
-        return $this->successResponse($sector, 'Secteur mis à jour');
+
+        return $this->successResponse($sector->fresh()->load(['createdBy', 'updatedBy']), 'Secteur mis à jour');
     }
 
     public function destroy($id)
     {
         $sector = Sector::findOrFail($id);
         $sector->delete();
+
         return $this->noContentSuccessResponse('Secteur supprimé');
     }
 }

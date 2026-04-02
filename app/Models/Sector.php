@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sector extends Model
 {
-    protected $fillable = ['is_visible', 'name', 'slug', 'description', 'icon'];
+    protected $fillable = ['is_visible', 'name', 'slug', 'description', 'icon', 'created_by', 'updated_by'];
 
     public function services()
     {
@@ -21,5 +21,15 @@ class Sector extends Model
     public function jobOffers()
     {
         return $this->hasMany(JobOffer::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

@@ -8,10 +8,8 @@ import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Input, Select } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
-import { useToast } from '../../Components/ui/Toast';
 
 const Users = () => {
-  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,18 +129,15 @@ const Users = () => {
         const response = await api.post(`/users/${editingUser.id}`, data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        toast.success(response.message || 'Utilisateur mis à jour avec succès');
       } else {
         const response = await api.post('/users', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        toast.success(response.message || 'Utilisateur créé avec succès');
       }
       fetchUsers();
       handleCloseModal();
     } catch (error) {
       if (error.errors) setErrors(error.errors);
-      toast.error(error.message || 'Une erreur est survenue');
     } finally {
       setSubmitting(false);
     }
@@ -158,13 +153,11 @@ const Users = () => {
     setDeleting(true);
     try {
       const response = await api.delete(`/users/${userToDelete}`);
-      toast.success(response.message || 'Utilisateur supprimé avec succès');
       fetchUsers();
       setIsConfirmOpen(false);
       setUserToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression de l\'utilisateur');
-      toast.error(error.message || 'Échec de la suppression de l\'utilisateur');
     } finally {
       setDeleting(false);
     }
@@ -173,11 +166,9 @@ const Users = () => {
   const toggleStatus = async (user) => {
     try {
       const response = await api.get(`/users/switch-status/${user.id}`);
-      toast.success(response.message || `Statut de ${user.name} mis à jour`);
       fetchUsers();
     } catch (error) {
       console.error('Échec de la mise à jour du statut');
-      toast.error(error.message || 'Échec de la mise à jour du statut');
     }
   };
 
@@ -193,13 +184,11 @@ const Users = () => {
     setSubmitting(true);
     try {
       const response = await api.post(`/users/switch-role/${userToSwitchRole.id}`, { role: selectedRole });
-      toast.success(response.message || `Rôle de ${userToSwitchRole.name} mis à jour`);
       fetchUsers();
       setIsRoleModalOpen(false);
       setUserToSwitchRole(null);
     } catch (error) {
       console.error('Échec du changement de rôle');
-      toast.error(error.message || 'Échec du changement de rôle');
     } finally {
       setSubmitting(false);
     }

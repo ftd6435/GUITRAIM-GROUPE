@@ -16,7 +16,14 @@ class CategoryController extends Controller
 
     public function index()
     {
-        $query = Category::with(['createdBy', 'updatedBy']);
+        $query = Category::with(['createdBy', 'updatedBy'])
+            ->withCount([
+                'blogPosts' => function ($q) {
+                    if (! Auth::guard('sanctum')->check()) {
+                        $q->whereNotNull('published_at');
+                    }
+                },
+            ]);
 
         if (! Auth::guard('sanctum')->check()) {
             $query->where('status', true);

@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Mail\Contact\AdminContactReceived;
+use App\Mail\Contact\VisitorContactConfirmation;
 use App\Models\Contact;
+use App\Models\Setting;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
@@ -32,6 +36,18 @@ class ContactController extends Controller
         $validated['updated_by'] = $userId;
 
         $contact = Contact::create($validated);
+
+        $adminEmail = Setting::query()->value('email') ?: config('mail.from.address');
+        if ($adminEmail) {
+            Mail::to($adminEmail)->queue(
+                (new AdminContactReceived($contact))
+                    ->replyTo($contact->email, $contact->full_name)
+            );
+        }
+
+        Mail::to($contact->email)->queue(
+            (new VisitorContactConfirmation($contact))->delay(now()->addSeconds(10))
+        );
 
         return $this->successResponse($contact->load(['createdBy', 'updatedBy']), 'Message envoyé avec succès', 201);
     }

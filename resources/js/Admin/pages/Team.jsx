@@ -5,7 +5,7 @@ import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
 import ConfirmModal from '../../Components/ui/ConfirmModal';
-import { Input, Textarea } from '../../Components/ui/Input';
+import { Input, Select, Textarea } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 
@@ -16,7 +16,15 @@ const Team = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
-  const [formData, setFormData] = useState({ name: '', position: '', bio: '', avatar: null, is_visible: true });
+  const [formData, setFormData] = useState({
+    name: '',
+    position: '',
+    department: '',
+    is_management: true,
+    bio: '',
+    avatar: null,
+    is_visible: true
+  });
   const [previewUrl, setPreviewUrl] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -45,6 +53,8 @@ const Team = () => {
       setFormData({
         name: member.name,
         position: member.position,
+        department: member.department || '',
+        is_management: !!member.is_management,
         bio: member.bio || '',
         avatar: null,
         is_visible: !!member.is_visible
@@ -52,7 +62,7 @@ const Team = () => {
       setPreviewUrl(member.avatar ? `/storage/images/avatars/${member.avatar}` : null);
     } else {
       setEditingMember(null);
-      setFormData({ name: '', position: '', bio: '', avatar: null, is_visible: true });
+      setFormData({ name: '', position: '', department: '', is_management: true, bio: '', avatar: null, is_visible: true });
       setPreviewUrl(null);
     }
     setErrors({});
@@ -80,6 +90,8 @@ const Team = () => {
     const data = new FormData();
     data.append('name', formData.name);
     data.append('position', formData.position);
+    data.append('department', formData.department || '');
+    data.append('is_management', formData.is_management ? 1 : 0);
     data.append('bio', formData.bio);
     data.append('is_visible', formData.is_visible ? 1 : 0);
     if (formData.avatar) {
@@ -164,6 +176,7 @@ const Team = () => {
                 <TR>
                   <TH>Statut</TH>
                   <TH>Membre</TH>
+                  <TH>Catégorie</TH>
                   <TH>Poste</TH>
                   <TH className="text-right">Actions</TH>
                 </TR>
@@ -197,6 +210,19 @@ const Team = () => {
                         <span className="font-semibold text-[hsla(210,30%,20%,1)]">{member.name}</span>
                       </div>
                     </TD>
+                    <TD>
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-xs font-bold",
+                        member.is_management ? "bg-[#E8F5F0] text-[#4CAF8D]" : "bg-[#4A8BC2]/10 text-[#1A3A5C]"
+                      )}>
+                        {member.is_management ? 'Direction Générale' : 'Responsable Sectoriel'}
+                      </span>
+                      {!member.is_management && member.department ? (
+                        <div className="text-xs font-medium text-[hsla(210,20%,45%,1)] mt-1">
+                          {member.department}
+                        </div>
+                      ) : null}
+                    </TD>
                     <TD>{member.position}</TD>
                     <TD className="text-right space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(member)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
@@ -210,7 +236,7 @@ const Team = () => {
                 ))}
                 {team.length === 0 && (
                   <TR>
-                    <TD colSpan={3} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
+                    <TD colSpan={4} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
                       Aucun membre trouvé.
                     </TD>
                   </TR>
@@ -269,6 +295,35 @@ const Team = () => {
             error={errors.position?.[0]}
             required
           />
+
+          <Select
+            label="Catégorie"
+            value={formData.is_management ? 'management' : 'sector'}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'management') {
+                setFormData((prev) => ({ ...prev, is_management: true, department: '' }));
+              } else {
+                setFormData((prev) => ({ ...prev, is_management: false }));
+              }
+            }}
+            options={[
+              { value: 'management', label: 'Direction Générale' },
+              { value: 'sector', label: 'Responsable Sectoriel' },
+            ]}
+            error={errors.is_management?.[0]}
+          />
+
+          {!formData.is_management ? (
+            <Input
+              label="Département / Secteur"
+              placeholder="ex: Construction, Immobilier, Transport..."
+              value={formData.department}
+              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              error={errors.department?.[0]}
+            />
+          ) : null}
+
           <Textarea
             label="Bio"
             placeholder="Courte biographie"

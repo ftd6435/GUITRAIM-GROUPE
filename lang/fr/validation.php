@@ -156,6 +156,7 @@ return [
         'image' => 'image',
         'images' => 'galerie d’images',
         'images.*' => 'image de la galerie',
+        'body' => 'commentaire',
         'logo' => 'logo',
         'phone' => 'téléphone',
         'sector_id' => 'secteur',

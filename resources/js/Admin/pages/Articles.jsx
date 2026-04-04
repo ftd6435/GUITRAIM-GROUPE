@@ -23,7 +23,7 @@ const Articles = () => {
   const [formData, setFormData] = useState({
     category_id: '',
     title: '',
-    summary: '',
+    excerpt: '',
     content: '',
     published: true,
     tag_ids: [],
@@ -63,7 +63,7 @@ const Articles = () => {
       setFormData({
         category_id: article.category_id || '',
         title: article.title,
-        summary: article.summary || '',
+        excerpt: article.excerpt || article.summary || '',
         content: article.content || '',
         published: !!article.published,
         tag_ids: article.tags?.map(t => t.id) || [],
@@ -75,7 +75,7 @@ const Articles = () => {
       setFormData({
         category_id: categories[0]?.id || '',
         title: '',
-        summary: '',
+        excerpt: '',
         content: '',
         published: true,
         tag_ids: [],
@@ -109,7 +109,7 @@ const Articles = () => {
     const data = new FormData();
     data.append('title', formData.title);
     data.append('category_id', formData.category_id);
-    data.append('summary', formData.summary);
+    data.append('excerpt', formData.excerpt);
     data.append('content', formData.content);
     data.append('published', formData.published ? 1 : 0);
 
@@ -166,7 +166,7 @@ const Articles = () => {
 
   const toggleStatus = async (article) => {
     try {
-      await api.put(`/blog/${article.id}`, { ...article, published: !article.published });
+      await api.put(`/blog/${article.id}`, { published: !article.published });
       fetchData();
     } catch (error) {
       console.error('Échec de la mise à jour du statut');
@@ -199,7 +199,7 @@ const Articles = () => {
                   <TH>Statut</TH>
                   <TH>Titre</TH>
                   <TH>Catégorie</TH>
-                  <TH>Statut</TH>
+                  <TH>Publié le</TH>
                   <TH>Créé le</TH>
                   <TH className="text-right">Actions</TH>
                 </TR>
@@ -243,7 +243,7 @@ const Articles = () => {
                         "px-2 py-1 rounded-full text-xs font-bold",
                         article.published ? "bg-[#E8F5F0] text-[#4CAF8D]" : "bg-[#FDEAEA] text-[#D64545]"
                       )}>
-                        {article.published ? 'Publié' : 'Brouillon'}
+                        {article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR') : '—'}
                       </span>
                     </TD>
                     <TD>{new Date(article.created_at).toLocaleDateString()}</TD>
@@ -328,9 +328,9 @@ const Articles = () => {
           <Textarea
             label="Résumé"
             placeholder="Bref résumé pour les aperçus"
-            value={formData.summary}
-            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            error={errors.summary?.[0]}
+            value={formData.excerpt}
+            onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+            error={errors.excerpt?.[0]}
             rows={2}
           />
 
@@ -409,4 +409,3 @@ const Articles = () => {
 };
 
 export default Articles;
-

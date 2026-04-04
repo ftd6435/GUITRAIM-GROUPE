@@ -8,11 +8,21 @@ class BlogPost extends Model
 {
     protected $fillable = ['title', 'slug', 'category_id', 'excerpt', 'content', 'image', 'reading_time', 'published_at', 'author_id', 'created_by', 'updated_by'];
 
-    protected $appends = ['image_path'];
+    protected $appends = ['image_path', 'published', 'summary'];
 
     public function getImagePathAttribute()
     {
-        return $this->image ? asset('storage/images/blog/'.$this->image) : null;
+        return $this->image ? asset('storage/images/blog/' . $this->image) : null;
+    }
+
+    public function getPublishedAttribute()
+    {
+        return ! is_null($this->published_at);
+    }
+
+    public function getSummaryAttribute()
+    {
+        return $this->excerpt;
     }
 
     public function author()
@@ -28,6 +38,11 @@ class BlogPost extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'blog_post_tags');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(BlogComment::class);
     }
 
     public function createdBy()

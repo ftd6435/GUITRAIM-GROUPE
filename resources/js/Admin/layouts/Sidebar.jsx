@@ -34,6 +34,7 @@ const menuItems = [
     path: '/admin/blog',
     subItems: [
       { label: 'Articles', path: '/admin/blog/articles' },
+      { label: 'Commentaires', path: '/admin/blog/comments' },
       { label: 'Catégories', path: '/admin/blog/categories' },
       { label: 'Tags', path: '/admin/blog/tags' },
     ]

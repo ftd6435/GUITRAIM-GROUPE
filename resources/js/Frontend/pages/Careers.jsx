@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Briefcase, Users, TrendingUp, Globe, Award,
   Lightbulb, Shield, HeartHandshake, MapPin,
@@ -19,6 +19,9 @@ const Careers = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const cvInputRef = useRef(null);
+  const coverLetterInputRef = useRef(null);
+  const [spontaneousFiles, setSpontaneousFiles] = useState({ cv_file: null, cover_letter_file: null });
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -26,8 +29,8 @@ const Careers = () => {
     email: '',
     phone: '',
     message: '',
-    cv: null,
-    cover_letter: null,
+    cv_file: null,
+    cover_letter_file: null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -53,7 +56,7 @@ const Careers = () => {
   };
 
   const handleFileChange = (e, field) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setFormData(prev => ({ ...prev, [field]: file }));
     }
@@ -71,8 +74,8 @@ const Careers = () => {
     data.append('email', formData.email);
     data.append('phone', formData.phone);
     data.append('message', formData.message);
-    if (formData.cv) data.append('cv', formData.cv);
-    if (formData.cover_letter) data.append('cover_letter', formData.cover_letter);
+    if (formData.cv_file) data.append('cv_file', formData.cv_file);
+    if (formData.cover_letter_file) data.append('cover_letter_file', formData.cover_letter_file);
 
     try {
       await api.post('/applications', data, {
@@ -86,9 +89,11 @@ const Careers = () => {
         email: '',
         phone: '',
         message: '',
-        cv: null,
-        cover_letter: null,
+        cv_file: null,
+        cover_letter_file: null,
       });
+      if (cvInputRef.current) cvInputRef.current.value = '';
+      if (coverLetterInputRef.current) coverLetterInputRef.current.value = '';
     } catch (error) {
       if (error.errors) {
         setErrors(error.errors);
@@ -328,18 +333,65 @@ const Careers = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
-                <label className="text-sm font-bold text-[#1A3A5C] ml-1">CV (PDF, max 5MB) *</label>
-                <div className="relative h-14 w-full rounded-2xl border-2 border-dashed border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] flex items-center px-6 gap-3 text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C] transition-all cursor-pointer">
-                  <Upload size={20} />
-                  <span className="text-sm font-bold">Choisir un fichier</span>
-                </div>
+                <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                  CV (PDF/DOC, max 5MB) *
+                  {spontaneousFiles.cv_file ? (
+                    <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>
+                  ) : null}
+                </label>
+                <label className="block relative cursor-pointer">
+                  <input
+                    type="file"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setSpontaneousFiles((p) => ({ ...p, cv_file: file }));
+                    }}
+                    required
+                  />
+                  <div className={cn(
+                    "relative h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
+                    spontaneousFiles.cv_file
+                      ? "bg-green-50 border-green-200 text-green-700"
+                      : "border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C]"
+                  )}>
+                    {spontaneousFiles.cv_file ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                    <span className="text-sm font-bold truncate">
+                      {spontaneousFiles.cv_file ? spontaneousFiles.cv_file.name : "Choisir un fichier"}
+                    </span>
+                  </div>
+                </label>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-bold text-[#1A3A5C] ml-1">Lettre de Motivation (optionnel)</label>
-                <div className="relative h-14 w-full rounded-2xl border-2 border-dashed border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] flex items-center px-6 gap-3 text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C] transition-all cursor-pointer">
-                  <Upload size={20} />
-                  <span className="text-sm font-bold">Choisir un fichier</span>
-                </div>
+                <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                  Lettre de Motivation (optionnel)
+                  {spontaneousFiles.cover_letter_file ? (
+                    <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>
+                  ) : null}
+                </label>
+                <label className="block relative cursor-pointer">
+                  <input
+                    type="file"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setSpontaneousFiles((p) => ({ ...p, cover_letter_file: file }));
+                    }}
+                  />
+                  <div className={cn(
+                    "relative h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
+                    spontaneousFiles.cover_letter_file
+                      ? "bg-green-50 border-green-200 text-green-700"
+                      : "border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C]"
+                  )}>
+                    {spontaneousFiles.cover_letter_file ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                    <span className="text-sm font-bold truncate">
+                      {spontaneousFiles.cover_letter_file ? spontaneousFiles.cover_letter_file.name : "Choisir un fichier"}
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -393,7 +445,7 @@ const Careers = () => {
                     Exigences & Compétences
                   </h3>
                   <div
-                    className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed prose prose-sm max-w-none ql-editor p-0"
+                    className="text-sm font-medium leading-relaxed break-words overflow-hidden text-[hsla(210,20%,40%,1)] [&_p]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[#1A3A5C] [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[#1A3A5C] [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-[#1A3A5C] [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-2 [&_a]:text-[#4A8BC2] [&_a]:font-bold [&_a]:break-words [&_blockquote]:border-l-4 [&_blockquote]:border-[#4A8BC2] [&_blockquote]:pl-5 [&_blockquote]:py-2 [&_blockquote]:my-6 [&_pre]:overflow-x-auto [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:bg-[hsla(210,25%,98%,1)] [&_code]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto"
                     dangerouslySetInnerHTML={{ __html: selectedJob.requirements }}
                   />
                 </div>
@@ -474,54 +526,56 @@ const Careers = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
-                    CV (PDF, max 5MB) *
-                    {formData.cv && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
-                  </label>
-                  <div className="relative group">
+                  <div className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                    CV (PDF/DOC, max 5MB) *
+                    {formData.cv_file && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
+                  </div>
+                  <label className="block relative cursor-pointer">
                     <input
+                      ref={cvInputRef}
                       type="file"
-                      onChange={(e) => handleFileChange(e, 'cv')}
+                      onChange={(e) => handleFileChange(e, 'cv_file')}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      accept=".pdf"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       required
                     />
                     <div className={cn(
                       "h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
-                      formData.cv ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] group-hover:border-[#1A3A5C]"
+                      formData.cv_file ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C]"
                     )}>
-                      {formData.cv ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                      {formData.cv_file ? <CheckCircle2 size={20} /> : <Upload size={20} />}
                       <span className="text-sm font-bold truncate">
-                        {formData.cv ? formData.cv.name : "Choisir un CV"}
+                        {formData.cv_file ? formData.cv_file.name : "Choisir un fichier"}
                       </span>
                     </div>
-                  </div>
-                  {errors.cv && <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cv[0]}</p>}
+                  </label>
+                  {errors.cv_file?.[0] ? <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cv_file[0]}</p> : null}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
+                  <div className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
                     Lettre de Motivation (optionnel)
-                    {formData.cover_letter && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
-                  </label>
-                  <div className="relative group">
+                    {formData.cover_letter_file && <span className="text-green-600 text-[10px] font-black uppercase">Fichier joint</span>}
+                  </div>
+                  <label className="block relative cursor-pointer">
                     <input
+                      ref={coverLetterInputRef}
                       type="file"
-                      onChange={(e) => handleFileChange(e, 'cover_letter')}
+                      onChange={(e) => handleFileChange(e, 'cover_letter_file')}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      accept=".pdf"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     />
                     <div className={cn(
                       "h-14 w-full rounded-2xl border-2 border-dashed flex items-center px-6 gap-3 transition-all",
-                      formData.cover_letter ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] group-hover:border-[#1A3A5C]"
+                      formData.cover_letter_file ? "bg-green-50 border-green-200 text-green-700" : "bg-[hsla(210,25%,98%,1)] border-[#E0E6ED] text-[hsla(210,20%,60%,1)] hover:border-[#1A3A5C]"
                     )}>
-                      {formData.cover_letter ? <CheckCircle2 size={20} /> : <Upload size={20} />}
+                      {formData.cover_letter_file ? <CheckCircle2 size={20} /> : <Upload size={20} />}
                       <span className="text-sm font-bold truncate">
-                        {formData.cover_letter ? formData.cover_letter.name : "Choisir un fichier"}
+                        {formData.cover_letter_file ? formData.cover_letter_file.name : "Choisir un fichier"}
                       </span>
                     </div>
-                  </div>
-                  {errors.cover_letter && <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cover_letter[0]}</p>}
+                  </label>
+                  {errors.cover_letter_file?.[0] ? <p className="text-xs font-medium text-[#D64545] ml-1">{errors.cover_letter_file[0]}</p> : null}
                 </div>
               </div>
 

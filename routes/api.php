@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\ApplicationController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BlogController;
+use App\Http\Controllers\Api\V1\BlogCommentController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\JobController;
@@ -59,6 +60,11 @@ Route::prefix('v1')->group(function () {
         Route::put('blog/{id}', [BlogController::class, 'update']);
         Route::delete('blog/{id}', [BlogController::class, 'destroy']);
 
+        // Blog Comments (Moderation)
+        Route::get('blog-comments', [BlogCommentController::class, 'index']);
+        Route::put('blog-comments/{id}', [BlogCommentController::class, 'update']);
+        Route::delete('blog-comments/{id}', [BlogCommentController::class, 'destroy']);
+
         // Categories (CRUD)
         Route::post('categories', [CategoryController::class, 'store']);
         Route::put('categories/{id}', [CategoryController::class, 'update']);
@@ -84,13 +90,16 @@ Route::prefix('v1')->group(function () {
         Route::delete('partners/{id}', [PartnerController::class, 'destroy']);
 
         // Pages (Update)
+        Route::get('pages/all', [PageController::class, 'index']);
         Route::put('pages/{slug}', [PageController::class, 'update']);
+        Route::post('pages/{slug}', [PageController::class, 'update']);
 
         // Contacts (Admin Inbox)
         Route::get('contact', [ContactController::class, 'index']);
         Route::delete('contact/{id}', [ContactController::class, 'destroy']);
 
         // Jobs (CRUD)
+        Route::get('jobs/all', [JobController::class, 'adminIndex']);
         Route::post('jobs', [JobController::class, 'store']);
         Route::put('jobs/{id}', [JobController::class, 'update']);
         Route::delete('jobs/{id}', [JobController::class, 'destroy']);
@@ -98,6 +107,7 @@ Route::prefix('v1')->group(function () {
         // Applications (Admin)
         Route::get('applications', [ApplicationController::class, 'index']);
         Route::get('applications/{id}', [ApplicationController::class, 'show']);
+        Route::put('applications/{id}', [ApplicationController::class, 'update']);
         Route::delete('applications/{id}', [ApplicationController::class, 'destroy']);
 
         // Newsletter (Admin)
@@ -123,6 +133,7 @@ Route::prefix('v1')->group(function () {
     Route::get('tags', [TagController::class, 'index']);
     Route::get('blog', [BlogController::class, 'index']);
     Route::get('blog/{slug}', [BlogController::class, 'show']);
+    Route::get('blog/{slug}/comments', [BlogCommentController::class, 'publicIndex']);
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('team', [TeamController::class, 'index']);
     Route::get('testimonials', [TestimonialController::class, 'index']);
@@ -134,6 +145,7 @@ Route::prefix('v1')->group(function () {
 
     // Public POST Routes (Forms)
     Route::post('contact', [ContactController::class, 'store']);
+    Route::post('blog/{slug}/comments', [BlogCommentController::class, 'store']);
     Route::post('applications', [ApplicationController::class, 'store']);
     Route::post('newsletter/subscribe', [NewsletterController::class, 'subscribe']);
 });

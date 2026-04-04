@@ -5,11 +5,16 @@ import Button from '../../Components/ui/Button';
 import { Card, CardContent } from '../../Components/ui/Card';
 import Reveal from '../components/Reveal';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Home = () => {
   const [sectors, setSectors] = useState([]);
   const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [partnersLoading, setPartnersLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(null);
+  const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +35,57 @@ const Home = () => {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        setPartnersLoading(true);
+        const response = await api.get('/partners');
+        setPartners(response.data || []);
+      } catch (e) {
+        setPartners([]);
+      } finally {
+        setPartnersLoading(false);
+      }
+    };
+    fetchPartners();
+  }, []);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/accueil');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
+  }, []);
+
+  const heroImages = useMemo(() => {
+    const fromApi = (page?.hero_images_paths || []).filter(Boolean).slice(0, 3);
+    if (fromApi.length >= 2) return fromApi;
+    return [
+      'https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop',
+    ];
+  }, [page?.hero_images_paths]);
+
+  useEffect(() => {
+    if (!heroImages.length) return;
+    setHeroIndex(0);
+    const id = window.setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroImages.length);
+    }, 6500);
+    return () => window.clearInterval(id);
+  }, [heroImages.length]);
 
   const iconForSector = (sectorSlug) => {
     const slug = (sectorSlug || '').toLowerCase();
@@ -98,11 +154,14 @@ const Home = () => {
       <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden w-full">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2000&auto=format&fit=crop"
-            alt="GUITRAIM GROUPE Background"
-            className="w-full h-full object-cover scale-105 animate-pulse-slow"
-          />
+          {heroImages.map((src, idx) => (
+            <img
+              key={`${src}-${idx}`}
+              src={src}
+              alt="GUITRAIM GROUPE Background"
+              className={`absolute inset-0 w-full h-full object-cover scale-105 transition-opacity duration-1000 ${idx === heroIndex ? 'opacity-100' : 'opacity-0'}`}
+            />
+          ))}
           <div className="absolute inset-0 bg-[#1A3A5C]/70 backdrop-blur-[2px]" />
         </div>
 
@@ -111,13 +170,14 @@ const Home = () => {
           <Reveal className="text-center space-y-8 w-full" direction="up" delay={200}>
             <div className="space-y-4 max-w-4xl mx-auto">
               <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">
-                GUITRAIM GROUPE
+                {page?.data?.hero_title || 'GUITRAIM GROUPE'}
               </h1>
               <h2 className="text-2xl lg:text-3xl font-bold text-white/90">
                 Votre Partenaire Multi-Services en Guinée
               </h2>
-              <p className="text-lg lg:text-xl font-medium text-white/70 max-w-2xl mx-auto leading-relaxed">
-                Expertise reconnue dans la construction, l'immobilier, le transport & logistique, et les solutions technologiques pour accompagner vos projets les plus ambitieux.
+              <p className="text-lg lg:text-xl font-medium text-white/70 max-w-2xl mx-auto leading-relaxed whitespace-pre-line">
+                {page?.data?.hero_subtitle ||
+                  "Expertise reconnue dans la construction, l'immobilier, le transport & logistique, et les solutions technologiques pour accompagner vos projets les plus ambitieux."}
               </p>
             </div>
 
@@ -217,6 +277,48 @@ const Home = () => {
               </Button>
             </Link>
           </div>
+        </Reveal>
+      </section>
+
+      {/* Partners */}
+      <section className="flex justify-center w-full">
+        <Reveal className="container px-4 sm:px-6 lg:px-8 space-y-12" direction="up">
+          <div className="text-center space-y-4 max-w-2xl mx-auto">
+            <h3 className="text-3xl lg:text-4xl font-bold text-[#1A3A5C]">Nos Partenaires</h3>
+            <p className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+              Ils nous font confiance et nous accompagnent dans nos réalisations.
+            </p>
+          </div>
+
+          {partnersLoading ? (
+            <div className="text-center text-sm font-medium text-[hsla(210,20%,40%,1)]">Chargement...</div>
+          ) : partners.length ? (
+            <div className="partner-marquee overflow-hidden rounded-[32px] border border-[#E0E6ED] bg-white">
+              <div className="partner-marquee-track gap-10 py-8 px-6">
+                {[...partners, ...partners].map((p, idx) => {
+                  const key = `${p.id}-${idx}`;
+                  const content = (
+                    <div className="h-20 w-44 md:w-56 flex items-center justify-center rounded-[24px] bg-[hsla(210,25%,98%,1)] border border-[#E0E6ED] px-5">
+                      {p.logo_path ? (
+                        <img src={p.logo_path} alt={p.name} className="max-h-12 max-w-full object-contain" />
+                      ) : (
+                        <span className="text-xs font-bold text-[hsla(210,20%,50%,1)]">{p.name}</span>
+                      )}
+                    </div>
+                  );
+                  return p.website_url ? (
+                    <a key={key} href={p.website_url} target="_blank" rel="noreferrer" className="shrink-0 hover:opacity-90 transition-opacity">
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={key} className="shrink-0">
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </Reveal>
       </section>
 

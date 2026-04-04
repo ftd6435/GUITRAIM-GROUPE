@@ -16,6 +16,16 @@ const ArticleDetail = () => {
   const [articleData, setArticleData] = useState(null);
   const [relatedArticlesData, setRelatedArticlesData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentErrors, setCommentErrors] = useState({});
+  const [commentForm, setCommentForm] = useState({ name: '', email: '', body: '' });
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState(null);
+  const [selectedCategoryName, setSelectedCategoryName] = useState('');
+  const [categoryPostsLoading, setCategoryPostsLoading] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -33,19 +43,54 @@ const ArticleDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    const fetchRelated = async () => {
-      const categorySlug = articleData?.category?.slug;
-      if (!categorySlug) return;
+    const fetchComments = async () => {
       try {
-        const response = await api.get('/blog', { params: { category: categorySlug } });
-        const list = (response.data || []).filter((p) => p.slug !== articleData.slug).slice(0, 2);
+        setCommentsLoading(true);
+        const response = await api.get(`/blog/${id}/comments`);
+        setComments(response.data || []);
+      } catch (e) {
+        setComments([]);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    fetchComments();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchRelated = async () => {
+      if (!selectedCategorySlug) return;
+      try {
+        setCategoryPostsLoading(true);
+        const response = await api.get('/blog', { params: { category: selectedCategorySlug } });
+        const currentSlug = articleData?.slug;
+        const list = (response.data || [])
+          .filter((p) => (currentSlug ? p.slug !== currentSlug : true))
+          .slice(0, 4);
         setRelatedArticlesData(list);
       } catch (e) {
         setRelatedArticlesData([]);
+      } finally {
+        setCategoryPostsLoading(false);
       }
     };
     fetchRelated();
-  }, [articleData?.category?.slug, articleData?.slug]);
+  }, [selectedCategorySlug, articleData?.slug]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await api.get('/categories');
+        setCategories(response.data || []);
+      } catch (e) {
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Static article data
   const fallbackArticle = {
@@ -139,6 +184,123 @@ const ArticleDetail = () => {
   const article = articleData || fallbackArticle;
   const relatedArticles = relatedArticlesData.length ? relatedArticlesData : (article.relatedArticles || []);
 
+  const articleTitle = article?.title || '';
+  const shareUrl = typeof window !== 'undefined'
+    ? window.location.href
+    : '';
+
+  const publishedDateLabel = (() => {
+    if (article?.published_at) {
+      return new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+    if (article?.created_at) {
+      return new Date(article.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+    return article.date || '';
+  })();
+
+  const publishedTimeLabel = (() => {
+    if (article?.created_at) {
+      return new Date(article.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+    return '';
+  })();
+
+  const authorName = article?.author?.name || article.author || '—';
+  const authorAvatarUrl =
+    article?.author?.avatar_path ||
+    (article?.author?.avatar ? `/storage/images/avatars/${article.author.avatar}` : null) ||
+    article.authorAvatar ||
+    null;
+
+  const openShare = (url) => {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer,width=720,height=600');
+  };
+
+  const shareToFacebook = () => {
+    openShare(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`);
+  };
+
+  const shareToLinkedIn = () => {
+    openShare(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`);
+  };
+
+  const shareToX = () => {
+    openShare(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(articleTitle)}`);
+  };
+
+  const shareToWhatsApp = () => {
+    openShare(`https://wa.me/?text=${encodeURIComponent(`${articleTitle} - ${shareUrl}`)}`);
+  };
+
+  const copyLink = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const input = document.createElement('input');
+        input.value = shareUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { type: 'success', message: 'Lien copié.' } }));
+    } catch (e) {
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { type: 'error', message: 'Impossible de copier le lien.' } }));
+    }
+  };
+
+  const nativeShare = async () => {
+    try {
+      if (navigator?.share) {
+        await navigator.share({ title: articleTitle, url: shareUrl });
+      } else {
+        await copyLink();
+      }
+    } catch (e) {
+    }
+  };
+
+  useEffect(() => {
+    const slug = articleData?.category?.slug || article?.category?.slug || article?.categorySlug || null;
+    const name = articleData?.category?.name || article?.category?.name || article?.category || '';
+    if (!selectedCategorySlug && slug) {
+      setSelectedCategorySlug(slug);
+      setSelectedCategoryName(name);
+    }
+  }, [articleData?.category?.slug, articleData?.category?.name]);
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    setCommentSubmitting(true);
+    setCommentErrors({});
+    try {
+      const response = await api.post(`/blog/${id}/comments`, commentForm);
+      const created = response?.data;
+      if (created) {
+        setComments((prev) => {
+          const exists = prev.some((c) => c.id === created.id);
+          if (exists) return prev;
+          return [
+            {
+              ...created,
+              is_approved: !!created.is_approved,
+              created_at: created.created_at || new Date().toISOString(),
+            },
+            ...prev,
+          ];
+        });
+      }
+      setCommentForm({ name: '', email: '', body: '' });
+    } catch (error) {
+      if (error?.errors) setCommentErrors(error.errors);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -174,15 +336,15 @@ const ArticleDetail = () => {
 
             <div className="flex flex-wrap items-center gap-8 pt-4">
               <div className="flex items-center gap-3">
-                {article.authorAvatar ? (
-                  <img src={article.authorAvatar} alt={article.author} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                {authorAvatarUrl ? (
+                  <img src={authorAvatarUrl} alt={authorName} className="w-12 h-12 rounded-full border-2 border-white/20 object-cover" />
                 ) : (
                   <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center text-white font-bold">
-                    {(article?.author?.name || article.author || 'A').slice(0, 1)}
+                    {(authorName || 'A').slice(0, 1)}
                   </div>
                 )}
                 <div>
-                  <p className="text-white font-bold">{article?.author?.name || article.author}</p>
+                  <p className="text-white font-bold">{authorName}</p>
                   {article.authorRole ? (
                     <p className="text-white/60 text-xs uppercase tracking-widest">{article.authorRole}</p>
                   ) : null}
@@ -190,7 +352,7 @@ const ArticleDetail = () => {
               </div>
               <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
                 <Calendar size={18} />
-                {article?.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : article.date}
+                {publishedDateLabel}{publishedTimeLabel ? ` • ${publishedTimeLabel}` : ''}
               </div>
               <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
                 <Clock size={18} />
@@ -202,10 +364,10 @@ const ArticleDetail = () => {
       </section>
 
       <section className="container px-4 lg:px-8 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-12">
-            <div className="prose prose-lg prose-slate max-w-none">
+            <div className="max-w-none">
               {Array.isArray(article.content) ? (
                 article.content.map((block, idx) => {
                   if (block.type === 'text') return <p key={idx} className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed mb-8">{block.value}</p>;
@@ -238,7 +400,10 @@ const ArticleDetail = () => {
                   return null;
                 })
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+                <div
+                  className="text-[hsla(210,20%,40%,1)] font-medium leading-relaxed break-words overflow-hidden [&_p]:mb-4 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-[#1A3A5C] [&_h1]:mb-5 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#1A3A5C] [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#1A3A5C] [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-2 [&_a]:text-[#4A8BC2] [&_a]:font-bold [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-[24px] [&_img]:border [&_img]:border-[#E0E6ED] [&_blockquote]:border-l-4 [&_blockquote]:border-[#4A8BC2] [&_blockquote]:pl-5 [&_blockquote]:py-2 [&_blockquote]:my-6 [&_pre]:overflow-x-auto [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:bg-[hsla(210,25%,98%,1)] [&_code]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto"
+                  dangerouslySetInnerHTML={{ __html: article.content || '' }}
+                />
               )}
             </div>
 
@@ -255,18 +420,88 @@ const ArticleDetail = () => {
             {/* Comment Form */}
             <div className="pt-16 space-y-10">
               <div className="space-y-4">
+                <div className="flex items-baseline justify-between gap-4 flex-wrap">
+                  <h3 className="text-3xl font-bold text-[#1A3A5C]">Commentaires</h3>
+                  <div className="text-xs font-bold uppercase tracking-widest text-[hsla(210,20%,50%,1)]">
+                    {commentsLoading ? 'Chargement...' : `${comments.length} commentaire${comments.length > 1 ? 's' : ''}`}
+                  </div>
+                </div>
+                {commentsLoading ? (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Chargement des commentaires...</div>
+                ) : comments.length ? (
+                  <div className="space-y-4">
+                    {comments.map((c) => (
+                      <div key={c.id} className="bg-white rounded-[32px] p-6 border border-[#E0E6ED]">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full bg-[#1A3A5C]/10 text-[#1A3A5C] flex items-center justify-center font-bold shrink-0">
+                            {(c.name || 'A').slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                <div className="font-bold text-[#1A3A5C]">{c.name}</div>
+                                {!c.is_approved ? (
+                                  <span className="px-2 py-1 rounded-full bg-[#FFF7E6] text-[#B26A00] text-[10px] font-bold uppercase tracking-widest">
+                                    En attente
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="text-xs font-bold uppercase tracking-widest text-[hsla(210,20%,55%,1)]">
+                                {c.created_at ? new Date(c.created_at).toLocaleString('fr-FR') : ''}
+                              </div>
+                            </div>
+                            <div className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed whitespace-pre-wrap">
+                              {c.body}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                    Soyez le premier à laisser un commentaire.
+                  </div>
+                )}
+
                 <h3 className="text-3xl font-bold text-[#1A3A5C]">Laissez un Commentaire</h3>
                 <p className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Votre adresse e-mail ne sera pas publiée. Les champs marqués d'un (*) sont obligatoires.</p>
               </div>
 
-              <form className="space-y-6 bg-white rounded-[40px] p-8 lg:p-12 border border-[#E0E6ED] shadow-sm">
+              <form onSubmit={handleCommentSubmit} className="space-y-6 bg-white rounded-[40px] p-8 lg:p-12 border border-[#E0E6ED] shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input label="Nom *" placeholder="votre nom complet" required />
-                  <Input label="Email *" type="email" placeholder="votre@email.com" required />
+                  <Input
+                    label="Nom *"
+                    placeholder="votre nom complet"
+                    value={commentForm.name}
+                    onChange={(e) => setCommentForm((p) => ({ ...p, name: e.target.value }))}
+                    error={commentErrors.name?.[0]}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={commentForm.email}
+                    onChange={(e) => setCommentForm((p) => ({ ...p, email: e.target.value }))}
+                    error={commentErrors.email?.[0]}
+                  />
                 </div>
-                <Textarea label="Commentaire *" placeholder="partagez votre avis sur cet article..." required className="min-h-[150px]" />
-                <Button className="h-14 px-10 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold gap-3 shadow-xl shadow-[#1A3A5C]/20">
-                  <Send size={18} /> Publier le Commentaire
+                <Textarea
+                  label="Commentaire *"
+                  placeholder="partagez votre avis sur cet article..."
+                  value={commentForm.body}
+                  onChange={(e) => setCommentForm((p) => ({ ...p, body: e.target.value }))}
+                  error={commentErrors.body?.[0]}
+                  required
+                  className="min-h-[150px]"
+                />
+                <Button
+                  type="submit"
+                  disabled={commentSubmitting}
+                  className="h-14 px-10 rounded-2xl bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold gap-3 shadow-xl shadow-[#1A3A5C]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {commentSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />} Publier le Commentaire
                 </Button>
               </form>
             </div>
@@ -277,20 +512,75 @@ const ArticleDetail = () => {
             {/* Share */}
             <div className="bg-white rounded-[32px] p-8 border border-[#E0E6ED] space-y-6">
               <h4 className="text-lg font-bold text-[#1A3A5C]">Partager l'article</h4>
-              <div className="flex gap-4">
-                {[User, Send, LinkIcon, Share2].map((Icon, idx) => (
-                  <button key={idx} className="w-12 h-12 rounded-2xl bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] flex items-center justify-center hover:bg-[#1A3A5C] hover:text-white transition-all">
-                    <Icon size={20} />
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={shareToFacebook}
+                  className="h-12 px-4 rounded-2xl bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] flex items-center justify-center gap-2 hover:bg-[#1A3A5C] hover:text-white transition-all font-bold text-sm"
+                  title="Partager sur Facebook"
+                >
+                  <User size={18} />
+                  Facebook
+                </button>
+                <button
+                  type="button"
+                  onClick={shareToLinkedIn}
+                  className="h-12 px-4 rounded-2xl bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] flex items-center justify-center gap-2 hover:bg-[#1A3A5C] hover:text-white transition-all font-bold text-sm"
+                  title="Partager sur LinkedIn"
+                >
+                  <LinkIcon size={18} />
+                  LinkedIn
+                </button>
+                <button
+                  type="button"
+                  onClick={shareToX}
+                  className="h-12 px-4 rounded-2xl bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] flex items-center justify-center gap-2 hover:bg-[#1A3A5C] hover:text-white transition-all font-bold text-sm"
+                  title="Partager sur X"
+                >
+                  <Share2 size={18} />
+                  X
+                </button>
+                <button
+                  type="button"
+                  onClick={shareToWhatsApp}
+                  className="h-12 px-4 rounded-2xl bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] flex items-center justify-center gap-2 hover:bg-[#1A3A5C] hover:text-white transition-all font-bold text-sm"
+                  title="Partager sur WhatsApp"
+                >
+                  <Send size={18} />
+                  WhatsApp
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="h-12 px-4 rounded-2xl bg-white border border-[#E0E6ED] text-[#1A3A5C] flex items-center justify-center gap-2 hover:border-[#1A3A5C] transition-all font-bold text-sm"
+                  title="Copier le lien"
+                >
+                  <LinkIcon size={18} />
+                  Copier
+                </button>
+                <button
+                  type="button"
+                  onClick={nativeShare}
+                  className="h-12 px-4 rounded-2xl bg-[#1A3A5C] text-white flex items-center justify-center gap-2 hover:bg-[#1A3A5C]/90 transition-all font-bold text-sm"
+                  title="Partager"
+                >
+                  <Share2 size={18} />
+                  Partager
+                </button>
               </div>
             </div>
 
             {/* Related Articles */}
             <div className="space-y-6">
-              <h4 className="text-xl font-bold text-[#1A3A5C]">Articles Similaires</h4>
+              <h4 className="text-xl font-bold text-[#1A3A5C]">
+                {selectedCategoryName ? `Articles - ${selectedCategoryName}` : 'Articles'}
+              </h4>
               <div className="space-y-6">
-                {relatedArticles.map((item) => (
+                {categoryPostsLoading ? (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Chargement...</div>
+                ) : relatedArticles.map((item) => (
                   <Link key={item.id} to={`/blog/${item.slug || item.id}`} className="flex gap-4 group">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0">
                       <img
@@ -308,6 +598,11 @@ const ArticleDetail = () => {
                     </div>
                   </Link>
                 ))}
+                {!categoryPostsLoading && relatedArticles.length === 0 ? (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                    Aucun article dans cette catégorie.
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -315,18 +610,45 @@ const ArticleDetail = () => {
             <div className="bg-[hsla(210,25%,98%,1)] rounded-[32px] p-8 border border-[#E0E6ED] space-y-6">
               <h4 className="text-xl font-bold text-[#1A3A5C]">Catégories</h4>
               <div className="space-y-3">
-                {[
-                  { name: 'Construction', count: 12 },
-                  { name: 'Immobilier', count: 8 },
-                  { name: 'Transport', count: 5 },
-                  { name: 'Tech', count: 9 },
-                  { name: 'Actualités', count: 3 }
-                ].map((cat, idx) => (
-                  <Link key={idx} to="#" className="flex items-center justify-between p-3 rounded-xl hover:bg-white hover:shadow-sm transition-all group">
-                    <span className="text-sm font-bold text-[hsla(210,20%,40%,1)] group-hover:text-[#1A3A5C]">{cat.name}</span>
-                    <span className="w-8 h-8 rounded-lg bg-white border border-[#E0E6ED] flex items-center justify-center text-xs font-black text-[#1A3A5C] group-hover:bg-[#1A3A5C] group-hover:text-white transition-all">{cat.count}</span>
-                  </Link>
-                ))}
+                {categoriesLoading ? (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Chargement...</div>
+                ) : categories.length ? (
+                  categories.map((cat) => {
+                    const isActive = selectedCategorySlug === cat.slug;
+                    const count = typeof cat.blog_posts_count === 'number' ? cat.blog_posts_count : 0;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategorySlug(cat.slug);
+                          setSelectedCategoryName(cat.name);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between p-3 rounded-xl transition-all group text-left",
+                          isActive ? "bg-white shadow-sm" : "hover:bg-white hover:shadow-sm"
+                        )}
+                      >
+                        <span className={cn(
+                          "text-sm font-bold transition-colors",
+                          isActive ? "text-[#1A3A5C]" : "text-[hsla(210,20%,40%,1)] group-hover:text-[#1A3A5C]"
+                        )}>
+                          {cat.name}
+                        </span>
+                        <span className={cn(
+                          "w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-black transition-all",
+                          isActive
+                            ? "bg-[#1A3A5C] text-white border-[#1A3A5C]"
+                            : "bg-white border-[#E0E6ED] text-[#1A3A5C] group-hover:bg-[#1A3A5C] group-hover:text-white"
+                        )}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Aucune catégorie.</div>
+                )}
               </div>
             </div>
           </aside>

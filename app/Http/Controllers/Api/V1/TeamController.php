@@ -31,6 +31,7 @@ class TeamController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'is_visible' => 'boolean',
             'name' => 'required|string|max:150',
             'position' => 'nullable|string|max:150',
             'department' => 'nullable|string|max:100',
@@ -61,6 +62,7 @@ class TeamController extends Controller
         $member = TeamMember::findOrFail($id);
 
         $validated = $request->validate([
+            'is_visible' => 'boolean',
             'name' => 'sometimes|string|max:150',
             'position' => 'nullable|string|max:150',
             'department' => 'nullable|string|max:100',

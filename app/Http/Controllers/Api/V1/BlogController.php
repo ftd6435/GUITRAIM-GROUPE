@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -57,12 +58,24 @@ class BlogController extends Controller
             'title' => 'required|string|max:200',
             'category_id' => 'nullable|exists:categories,id',
             'excerpt' => 'nullable|string',
+            'summary' => 'nullable|string',
             'content' => 'required|string',
             'image' => 'nullable|image|max:2048',
             'reading_time' => 'nullable|integer',
+            'published' => 'boolean',
             'published_at' => 'nullable|date',
             'tags' => 'array|exists:tags,id',
         ]);
+
+        if (! isset($validated['excerpt']) && isset($validated['summary'])) {
+            $validated['excerpt'] = $validated['summary'];
+        }
+        unset($validated['summary']);
+
+        if (array_key_exists('published', $validated)) {
+            $validated['published_at'] = $validated['published'] ? Carbon::now()->toDateString() : null;
+        }
+        unset($validated['published']);
 
         $validated['slug'] = Str::slug($validated['title']);
         $validated['author_id'] = $request->user()->id;
@@ -71,6 +84,12 @@ class BlogController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = $this->imageUpload($request->file('image'), 'blog');
+        }
+
+        if (! isset($validated['reading_time']) || ! $validated['reading_time']) {
+            $plain = trim(strip_tags($validated['content'] ?? ''));
+            $words = preg_match_all('/\pL+/u', $plain) ?: 0;
+            $validated['reading_time'] = max(1, (int) ceil($words / 200));
         }
 
         $post = BlogPost::create($validated);
@@ -90,12 +109,24 @@ class BlogController extends Controller
             'title' => 'sometimes|string|max:200',
             'category_id' => 'nullable|exists:categories,id',
             'excerpt' => 'nullable|string',
+            'summary' => 'nullable|string',
             'content' => 'sometimes|string',
             'image' => 'nullable|image|max:2048',
             'reading_time' => 'nullable|integer',
+            'published' => 'boolean',
             'published_at' => 'nullable|date',
             'tags' => 'array|exists:tags,id',
         ]);
+
+        if (! isset($validated['excerpt']) && isset($validated['summary'])) {
+            $validated['excerpt'] = $validated['summary'];
+        }
+        unset($validated['summary']);
+
+        if (array_key_exists('published', $validated)) {
+            $validated['published_at'] = $validated['published'] ? Carbon::now()->toDateString() : null;
+        }
+        unset($validated['published']);
 
         if (isset($validated['title'])) {
             $validated['slug'] = Str::slug($validated['title']);
@@ -110,6 +141,13 @@ class BlogController extends Controller
 
         $validated['updated_by'] = $request->user()->id;
         $post->update($validated);
+
+        if (! isset($validated['reading_time']) || ! $validated['reading_time']) {
+            $content = $validated['content'] ?? $post->content ?? '';
+            $plain = trim(strip_tags($content));
+            $words = preg_match_all('/\pL+/u', $plain) ?: 0;
+            $post->update(['reading_time' => max(1, (int) ceil($words / 200))]);
+        }
 
         if ($request->has('tags')) {
             $post->tags()->sync($request->tags);

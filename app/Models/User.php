@@ -28,6 +28,13 @@ class User extends Authenticatable
         'is_active',
     ];
 
+    protected $appends = ['avatar_path'];
+
+    public function getAvatarPathAttribute()
+    {
+        return $this->avatar ? asset('storage/images/avatars/'.$this->avatar) : null;
+    }
+
     public function blogPosts()
     {
         return $this->hasMany(BlogPost::class, 'author_id');

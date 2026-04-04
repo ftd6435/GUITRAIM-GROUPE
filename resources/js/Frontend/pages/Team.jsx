@@ -5,10 +5,12 @@ import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import Reveal from '../components/Reveal';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Team = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(null);
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -23,6 +25,24 @@ const Team = () => {
       }
     };
     fetchTeam();
+  }, []);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/equipe');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'Équipe - GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'Équipe - GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
   }, []);
 
   const iconForDepartment = (department) => {
@@ -47,7 +67,7 @@ const Team = () => {
       <section className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000&auto=format&fit=crop"
+            src={page?.hero_image_path || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000&auto=format&fit=crop"}
             alt="Notre Équipe"
             className="w-full h-full object-cover"
           />
@@ -67,9 +87,11 @@ const Team = () => {
       {/* Management Section */}
       <Reveal className="container px-4 lg:px-8 py-24 space-y-16">
         <div className="text-center space-y-4 max-w-2xl mx-auto">
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#1A3A5C]">Direction Générale</h2>
+          <h2 className="text-3xl lg:text-4xl font-bold text-[#1A3A5C]">
+            {page?.data?.management_title || 'Direction Générale'}
+          </h2>
           <p className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
-            L'équipe dirigeante qui porte la vision et la stratégie de GUITRAIM GROUPE
+            {page?.data?.management_subtitle || "L'équipe dirigeante qui porte la vision et la stratégie de GUITRAIM GROUPE"}
           </p>
         </div>
 
@@ -114,9 +136,11 @@ const Team = () => {
       {/* Sector Leaders Section */}
       <section className="container px-4 lg:px-8 py-24 space-y-16 bg-[hsla(210,25%,98%,1)] rounded-[64px]">
         <div className="text-center space-y-4 max-w-2xl mx-auto">
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#1A3A5C]">Nos Responsables Sectoriels</h2>
+          <h2 className="text-3xl lg:text-4xl font-bold text-[#1A3A5C]">
+            {page?.data?.sector_title || 'Nos Responsables Sectoriels'}
+          </h2>
           <p className="text-lg font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
-            Des experts reconnus dans leurs domaines respectifs pour vous accompagner dans tous vos projets
+            {page?.data?.sector_subtitle || "Des experts reconnus dans leurs domaines respectifs pour vous accompagner dans tous vos projets"}
           </p>
         </div>
 

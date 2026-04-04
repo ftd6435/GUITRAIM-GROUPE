@@ -13,26 +13,29 @@ class JobController extends Controller
 {
     use ApiResponses;
 
+    public function adminIndex()
+    {
+        return $this->successResponse(
+            JobOffer::with(['sector', 'createdBy', 'updatedBy'])->latest()->get()
+        );
+    }
+
     public function index()
     {
-        $query = JobOffer::with(['sector', 'createdBy', 'updatedBy']);
-
-        if (! Auth::guard('sanctum')->check()) {
-            $query->where('is_visible', true);
-        }
-
-        return $this->successResponse($query->latest()->get());
+        return $this->successResponse(
+            JobOffer::with(['sector', 'createdBy', 'updatedBy'])
+                ->where('is_visible', true)
+                ->latest()
+                ->get()
+        );
     }
 
     public function show($id)
     {
-        $query = JobOffer::with(['sector', 'createdBy', 'updatedBy'])->whereKey($id);
-
-        if (! Auth::guard('sanctum')->check()) {
-            $query->where('is_visible', true);
-        }
-
-        $job = $query->firstOrFail();
+        $job = JobOffer::with(['sector', 'createdBy', 'updatedBy'])
+            ->where('is_visible', true)
+            ->whereKey($id)
+            ->firstOrFail();
 
 
         return $this->successResponse($job);
@@ -48,6 +51,7 @@ class JobController extends Controller
             'description' => 'required|string',
             'requirements' => 'nullable|string',
             'published_at' => 'nullable|date',
+            'is_visible' => 'boolean',
         ]);
 
         $validated['created_by'] = $request->user()->id;
@@ -69,6 +73,7 @@ class JobController extends Controller
             'description' => 'sometimes|string',
             'requirements' => 'nullable|string',
             'published_at' => 'nullable|date',
+            'is_visible' => 'boolean',
         ]);
 
         $validated['updated_by'] = $request->user()->id;

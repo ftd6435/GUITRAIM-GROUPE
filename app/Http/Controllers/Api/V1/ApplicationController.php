@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Mail\Application\AdminApplicationReceived;
+use App\Mail\Application\ApplicantApplicationConfirmation;
 use App\Models\Application;
+use App\Models\Setting;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ApplicationController extends Controller
 {
@@ -50,9 +54,38 @@ class ApplicationController extends Controller
         $userId = $request->user()?->id;
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;
+        $validated['status'] = 'new';
         $application = Application::create($validated);
 
+        $application->load('job');
+
+        $adminEmail = Setting::query()->value('email') ?: config('mail.from.address');
+        if ($adminEmail) {
+            Mail::to($adminEmail)->queue(
+                (new AdminApplicationReceived($application))
+                    ->replyTo($application->email, trim($application->first_name . ' ' . $application->last_name))
+            );
+        }
+
+        Mail::to($application->email)->queue(
+            (new ApplicantApplicationConfirmation($application))->delay(now()->addSeconds(10))
+        );
+
         return $this->successResponse($application->load(['job', 'createdBy', 'updatedBy']), 'Candidature envoyée avec succès', 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $application = Application::with(['job', 'createdBy', 'updatedBy'])->findOrFail($id);
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:new,reviewed,accepted,rejected',
+        ]);
+
+        $validated['updated_by'] = $request->user()->id;
+        $application->update($validated);
+
+        return $this->successResponse($application->fresh()->load(['job', 'createdBy', 'updatedBy']), 'Statut mis à jour');
     }
 
     public function destroy($id)

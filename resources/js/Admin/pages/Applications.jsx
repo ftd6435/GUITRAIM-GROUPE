@@ -19,7 +19,7 @@ const Applications = () => {
     try {
       setLoading(true);
       const response = await api.get('/applications');
-      setApplications(response.data);
+      setApplications(response.data || []);
     } catch (error) {
       console.error('Échec de la récupération des candidatures');
     } finally {
@@ -106,10 +106,10 @@ const Applications = () => {
                 {applications.map((app) => (
                   <TR key={app.id}>
                     <TD>
-                      <div className="font-semibold text-[hsla(210,30%,20%,1)]">{app.full_name}</div>
+                      <div className="font-semibold text-[hsla(210,30%,20%,1)]">{app.full_name || `${app.first_name || ''} ${app.last_name || ''}`.trim()}</div>
                       <div className="text-xs text-[hsla(210,20%,40%,1)]">{app.email}</div>
                     </TD>
-                    <TD>{app.job_offer?.title || 'Poste Inconnu'}</TD>
+                    <TD>{app.job?.title || 'Candidature spontanée'}</TD>
                     <TD>{new Date(app.created_at).toLocaleDateString()}</TD>
                     <TD>
                       <span className={cn(
@@ -157,8 +157,8 @@ const Applications = () => {
                     <User size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[hsla(210,30%,20%,1)]">{selectedApp.full_name}</h3>
-                    <p className="text-sm font-medium text-[#4A8BC2]">{selectedApp.job_offer?.title}</p>
+                    <h3 className="text-lg font-bold text-[hsla(210,30%,20%,1)]">{selectedApp.full_name || `${selectedApp.first_name || ''} ${selectedApp.last_name || ''}`.trim()}</h3>
+                    <p className="text-sm font-medium text-[#4A8BC2]">{selectedApp.job?.title || 'Candidature spontanée'}</p>
                   </div>
                 </div>
 
@@ -197,25 +197,35 @@ const Applications = () => {
                     </button>
                   ))}
                 </div>
-                {selectedApp.cv_path && (
-                  <div className="pt-4">
+                <div className="pt-4 space-y-2">
+                  {selectedApp.cv_path ? (
                     <Button
                       variant="primary"
                       className="w-full gap-2"
-                      onClick={() => window.open(selectedApp.cv_path)}
+                      onClick={() => window.open(selectedApp.cv_path, '_blank')}
                     >
                       <Download size={18} />
-                      Télécharger CV / Resume
+                      Télécharger CV
                     </Button>
-                  </div>
-                )}
+                  ) : null}
+                  {selectedApp.cover_letter_path ? (
+                    <Button
+                      variant="secondary"
+                      className="w-full gap-2"
+                      onClick={() => window.open(selectedApp.cover_letter_path, '_blank')}
+                    >
+                      <Download size={18} />
+                      Télécharger Lettre
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-bold text-[hsla(210,30%,20%,1)]">Lettre de Motivation / Message</h4>
+              <h4 className="text-sm font-bold text-[hsla(210,30%,20%,1)]">Message</h4>
               <div className="p-6 bg-[hsla(210,25%,98%,1)] rounded-2xl border border-[#E0E6ED] text-sm text-[hsla(210,30%,20%,1)] leading-relaxed whitespace-pre-wrap">
-                {selectedApp.cover_letter || 'Aucun message fourni.'}
+                {selectedApp.message || 'Aucun message fourni.'}
               </div>
             </div>
 
@@ -232,4 +242,3 @@ const Applications = () => {
 };
 
 export default Applications;
-

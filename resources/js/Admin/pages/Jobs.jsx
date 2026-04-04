@@ -14,18 +14,19 @@ import LoadingSpinner from '../../Components/ui/LoadingSpinner';
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sectors, setSectors] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
+    sector_id: '',
     location: '',
-    type: 'Full-time',
-    salary_range: '',
+    contract_type: 'CDI',
     description: '',
     requirements: '',
-    status: 'open',
+    published_at: '',
     is_visible: true
   });
   const [errors, setErrors] = useState({});
@@ -35,8 +36,8 @@ const Jobs = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/jobs');
-      setJobs(response.data);
+      const response = await api.get('/jobs/all');
+      setJobs(response.data || []);
     } catch (error) {
       console.error('Échec de la récupération des emplois');
     } finally {
@@ -48,29 +49,41 @@ const Jobs = () => {
     fetchJobs();
   }, []);
 
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const response = await api.get('/sectors');
+        setSectors(response.data || []);
+      } catch (e) {
+        setSectors([]);
+      }
+    };
+    fetchSectors();
+  }, []);
+
   const handleOpenModal = (job = null) => {
     if (job) {
       setEditingJob(job);
       setFormData({
         title: job.title,
+        sector_id: job.sector_id || job.sector?.id || '',
         location: job.location || '',
-        type: job.type || 'Temps plein',
-        salary_range: job.salary_range || '',
+        contract_type: job.contract_type || 'CDI',
         description: job.description || '',
         requirements: job.requirements || '',
-        status: job.status || 'open',
+        published_at: job.published_at || '',
         is_visible: !!job.is_visible
       });
     } else {
       setEditingJob(null);
       setFormData({
         title: '',
+        sector_id: sectors[0]?.id || '',
         location: '',
-        type: 'Temps plein',
-        salary_range: '',
+        contract_type: 'CDI',
         description: '',
         requirements: '',
-        status: 'open',
+        published_at: '',
         is_visible: true
       });
     }
@@ -124,18 +137,18 @@ const Jobs = () => {
 
   const toggleVisibility = async (job) => {
     try {
-      await api.put(`/jobs/${job.id}`, { ...job, is_visible: !job.is_visible });
+      await api.put(`/jobs/${job.id}`, { is_visible: !job.is_visible });
       fetchJobs();
     } catch (error) {
       console.error('Échec de la mise à jour de la visibilité');
     }
   };
 
-  const jobTypes = [
-    { value: 'Full-time', label: 'Temps plein' },
-    { value: 'Part-time', label: 'Temps partiel' },
-    { value: 'Contract', label: 'Contrat' },
-    { value: 'Remote', label: 'À distance' }
+  const contractTypes = [
+    { value: 'CDI', label: 'CDI' },
+    { value: 'CDD', label: 'CDD' },
+    { value: 'Stage', label: 'Stage' },
+    { value: 'Freelance', label: 'Freelance' }
   ];
 
   return (
@@ -163,9 +176,11 @@ const Jobs = () => {
                 <TR>
                   <TH>Statut</TH>
                   <TH>Titre du Poste</TH>
-                  <TH>Type</TH>
+                  <TH>Secteur</TH>
+                  <TH>Contrat</TH>
                   <TH>Localisation</TH>
                   <TH>État</TH>
+                  <TH>Publication</TH>
                   <TH className="text-right">Actions</TH>
                 </TR>
               </THead>
@@ -177,8 +192,8 @@ const Jobs = () => {
                         onClick={() => toggleVisibility(job)}
                         className={cn(
                           "p-2 rounded-lg transition-colors",
-                          job.is_visible 
-                            ? "text-green-600 bg-green-50 hover:bg-green-100" 
+                          job.is_visible
+                            ? "text-green-600 bg-green-50 hover:bg-green-100"
                             : "text-[hsla(210,15%,55%,1)] bg-[hsla(210,25%,98%,1)] hover:bg-[hsla(210,25%,94%,1)]"
                         )}
                         title={job.is_visible ? "Visible sur le site" : "Masqué sur le site"}
@@ -189,7 +204,12 @@ const Jobs = () => {
                     <TD className="font-semibold text-[hsla(210,30%,20%,1)]">{job.title}</TD>
                     <TD>
                       <span className="px-2 py-1 rounded-full bg-[#4A8BC2]/10 text-[#1A3A5C] text-xs font-bold">
-                        {jobTypes.find(t => t.value === job.type)?.label || job.type}
+                        {job.sector?.name || '—'}
+                      </span>
+                    </TD>
+                    <TD>
+                      <span className="px-2 py-1 rounded-full bg-[#4A8BC2]/10 text-[#1A3A5C] text-xs font-bold">
+                        {job.contract_type || '—'}
                       </span>
                     </TD>
                     <TD>
@@ -201,10 +221,16 @@ const Jobs = () => {
                     <TD>
                       <span className={cn(
                         "px-2 py-1 rounded-full text-xs font-bold",
-                        job.status === 'open' ? "bg-[#E8F5F0] text-[#4CAF8D]" : "bg-[#FDEAEA] text-[#D64545]"
+                        job.is_visible ? "bg-[#E8F5F0] text-[#4CAF8D]" : "bg-[#FDEAEA] text-[#D64545]"
                       )}>
-                        {job.status === 'open' ? 'Ouvert' : 'Fermé'}
+                        {job.is_visible ? 'Visible' : 'Masqué'}
                       </span>
+                    </TD>
+                    <TD>
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <Calendar size={14} className="text-[hsla(210,15%,55%,1)]" />
+                        {job.published_at ? new Date(job.published_at).toLocaleDateString('fr-FR') : '—'}
+                      </div>
                     </TD>
                     <TD className="text-right space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(job)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
@@ -218,7 +244,7 @@ const Jobs = () => {
                 ))}
                 {jobs.length === 0 && (
                   <TR>
-                    <TD colSpan={5} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
+                    <TD colSpan={7} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
                       Aucun emploi publié pour le moment.
                     </TD>
                   </TR>
@@ -246,14 +272,23 @@ const Jobs = () => {
               required
             />
             <Select
-              label="Type"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              options={jobTypes}
-              error={errors.type?.[0]}
+              label="Contrat"
+              value={formData.contract_type}
+              onChange={(e) => setFormData({ ...formData, contract_type: e.target.value })}
+              options={contractTypes}
+              error={errors.contract_type?.[0]}
               required
             />
           </div>
+
+          <Select
+            label="Secteur *"
+            value={formData.sector_id}
+            onChange={(e) => setFormData({ ...formData, sector_id: e.target.value })}
+            options={(sectors || []).map((s) => ({ value: s.id, label: s.name }))}
+            error={errors.sector_id?.[0]}
+            required
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -264,11 +299,11 @@ const Jobs = () => {
               error={errors.location?.[0]}
             />
             <Input
-              label="Échelle Salariale"
-              placeholder="ex: 50k - 70k"
-              value={formData.salary_range}
-              onChange={(e) => setFormData({ ...formData, salary_range: e.target.value })}
-              error={errors.salary_range?.[0]}
+              label="Date de publication"
+              type="date"
+              value={formData.published_at || ''}
+              onChange={(e) => setFormData({ ...formData, published_at: e.target.value })}
+              error={errors.published_at?.[0]}
             />
           </div>
 
@@ -329,4 +364,3 @@ const Jobs = () => {
 };
 
 export default Jobs;
-

@@ -67,6 +67,26 @@
         }
     }
 
+    @keyframes partnerMarquee {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    .partner-marquee-track {
+        display: flex;
+        width: max-content;
+        animation: partnerMarquee 28s linear infinite;
+        will-change: transform;
+    }
+
+    .partner-marquee:hover .partner-marquee-track {
+        animation-play-state: paused;
+    }
+
     /* Professional Reveal Animations */
     .reveal-base {
         opacity: 0;

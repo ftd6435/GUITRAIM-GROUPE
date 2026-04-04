@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, Calendar, Search, Filter } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Projects = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ const Projects = () => {
   const [sectors, setSectors] = React.useState([]);
   const [projects, setProjects] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [page, setPage] = React.useState(null);
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
@@ -35,6 +37,24 @@ const Projects = () => {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/projets');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'Projets - GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'Projets - GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
   }, []);
 
   const categories = useMemo(() => {
@@ -66,7 +86,7 @@ const Projects = () => {
       <section className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop"
+            src={page?.hero_image_path || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop"}
             alt="Nos Projets"
             className="w-full h-full object-cover"
           />

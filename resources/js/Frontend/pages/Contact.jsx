@@ -4,10 +4,12 @@ import Button from '../../Components/ui/Button';
 import { Input, Textarea } from '../../Components/ui/Input';
 import { Card, CardContent } from '../../Components/ui/Card';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Contact = () => {
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [page, setPage] = useState(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -32,6 +34,24 @@ const Contact = () => {
       }
     };
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/contact');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'Contact - GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'Contact - GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
   }, []);
 
   const contactInfo = useMemo(() => {
@@ -77,7 +97,7 @@ const Contact = () => {
       <section className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1523966211575-eb4a01e7dd51?q=80&w=2000&auto=format&fit=crop"
+            src={page?.hero_image_path || "https://images.unsplash.com/photo-1523966211575-eb4a01e7dd51?q=80&w=2000&auto=format&fit=crop"}
             alt="Contactez-nous"
             className="w-full h-full object-cover"
           />

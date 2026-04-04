@@ -19,6 +19,7 @@ import Sectors from "./Admin/pages/Sectors";
 import Services from "./Admin/pages/Services";
 import Projects from "./Admin/pages/Projects";
 import Articles from "./Admin/pages/Articles";
+import BlogComments from "./Admin/pages/BlogComments";
 import Categories from "./Admin/pages/Categories";
 import Tags from "./Admin/pages/Tags";
 import MediaLibrary from "./Admin/pages/MediaLibrary";
@@ -112,6 +113,7 @@ const App = () => {
 
                                 <Route path="blog">
                                     <Route path="articles" element={<Articles />} />
+                                    <Route path="comments" element={<BlogComments />} />
                                     <Route path="categories" element={<Categories />} />
                                     <Route path="tags" element={<Tags />} />
                                 </Route>

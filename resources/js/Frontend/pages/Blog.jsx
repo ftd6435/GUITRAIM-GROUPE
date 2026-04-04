@@ -4,6 +4,7 @@ import { ArrowRight, Clock, Calendar, User } from 'lucide-react';
 import { cn } from '../../utils/utils';
 import Button from '../../Components/ui/Button';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Blog = () => {
   const fallbackArticles = [
@@ -101,6 +102,7 @@ const Blog = () => {
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(null);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -117,9 +119,37 @@ const Blog = () => {
     fetchArticles();
   }, []);
 
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/blog');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'Blog - GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'Blog - GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
+  }, []);
+
   const displayedArticles = useMemo(() => {
     return articles.length ? articles : fallbackArticles;
   }, [articles, fallbackArticles]);
+
+  const estimateReadingTimeMinutes = (value) => {
+    if (!value) return null;
+    const text = Array.isArray(value)
+      ? value.map((b) => (b?.value ? String(b.value) : '')).join(' ')
+      : String(value).replace(/<[^>]*>/g, ' ');
+    const words = (text.match(/[\p{L}\p{N}]+/gu) || []).length;
+    if (!words) return null;
+    return Math.max(1, Math.ceil(words / 200));
+  };
 
   return (
     <div className="pb-24">
@@ -127,7 +157,7 @@ const Blog = () => {
       <section className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=2000&auto=format&fit=crop"
+            src={page?.hero_image_path || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=2000&auto=format&fit=crop"}
             alt="Blog & Actualités"
             className="w-full h-full object-cover"
           />
@@ -167,9 +197,18 @@ const Blog = () => {
               const categoryLabel = article?.category?.name || article.category || 'Actualités';
               const dateLabel = article?.published_at
                 ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                : article.date || '';
+                : article?.created_at
+                  ? new Date(article.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : article.date || '—';
               const authorLabel = article?.author?.name || article.author || 'Équipe GUITRAIM';
-              const readTimeLabel = article?.reading_time ? `${article.reading_time} min de lecture` : article.readTime || '';
+              const readTimeMinutes =
+                article?.reading_time ||
+                estimateReadingTimeMinutes(article?.content) ||
+                estimateReadingTimeMinutes(article?.excerpt) ||
+                null;
+              const readTimeLabel = readTimeMinutes
+                ? `${readTimeMinutes} min de lecture`
+                : (article.readTime || '—');
               const excerpt = article.excerpt || article.summary || '';
               const articleSlug = article.slug || article.id;
 

@@ -5,12 +5,14 @@ import Button from '../../Components/ui/Button';
 import { cn } from '../../utils/utils';
 import Reveal from '../components/Reveal';
 import api from '../../utils/api';
+import { applySeo } from '../../utils/seo';
 
 const Services = () => {
   const [sectors, setSectors] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedServices, setExpandedServices] = useState({});
+  const [page, setPage] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +32,24 @@ const Services = () => {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        const response = await api.get('/pages/services');
+        setPage(response.data || null);
+        applySeo({
+          title: response?.data?.meta_title,
+          description: response?.data?.meta_description,
+          fallbackTitle: 'Services - GUITRAIM GROUPE',
+        });
+      } catch (e) {
+        setPage(null);
+        applySeo({ title: null, description: null, fallbackTitle: 'Services - GUITRAIM GROUPE' });
+      }
+    };
+    fetchPage();
   }, []);
 
   const iconForSector = (sectorSlug) => {
@@ -140,7 +160,7 @@ const Services = () => {
       <section className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=2000&auto=format&fit=crop"
+            src={page?.hero_image_path || "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=2000&auto=format&fit=crop"}
             alt="Nos Services"
             className="w-full h-full object-cover"
           />

@@ -12,6 +12,7 @@ import { cn } from '../../utils/utils';
 const Team = () => {
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sectors, setSectors] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
@@ -30,11 +31,13 @@ const Team = () => {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
+  const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+  const canDelete = currentUser?.role === 'super_admin';
 
   const fetchTeam = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/team');
+      const response = await api.get('/team/all');
       setTeam(response.data);
     } catch (error) {
       console.error('Échec de la récupération de l\'équipe');
@@ -45,6 +48,18 @@ const Team = () => {
 
   useEffect(() => {
     fetchTeam();
+  }, []);
+
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const response = await api.get('/sectors');
+        setSectors(response.data || []);
+      } catch (e) {
+        setSectors([]);
+      }
+    };
+    fetchSectors();
   }, []);
 
   const handleOpenModal = (member = null) => {
@@ -123,6 +138,7 @@ const Team = () => {
   };
 
   const handleDeleteClick = (id) => {
+    if (!canDelete) return;
     setMemberToDelete(id);
     setIsConfirmOpen(true);
   };
@@ -144,7 +160,7 @@ const Team = () => {
 
   const toggleVisibility = async (member) => {
     try {
-      await api.put(`/team/${member.id}`, { ...member, is_visible: !member.is_visible });
+      await api.put(`/team/${member.id}`, { is_visible: !member.is_visible });
       fetchTeam();
     } catch (error) {
       console.error('Échec de la mise à jour de la visibilité');
@@ -228,9 +244,11 @@ const Team = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(member)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(member.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
-                        <Trash2 size={16} />
-                      </Button>
+                      {canDelete ? (
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(member.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                          <Trash2 size={16} />
+                        </Button>
+                      ) : null}
                     </TD>
                   </TR>
                 ))}
@@ -315,12 +333,21 @@ const Team = () => {
           />
 
           {!formData.is_management ? (
-            <Input
+            <Select
               label="Département / Secteur"
-              placeholder="ex: Construction, Immobilier, Transport..."
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              options={[
+                { value: '', label: 'Sélectionner un secteur' },
+                ...[
+                  ...sectors.map((s) => ({ value: s.name, label: s.name })),
+                  ...(formData.department && !sectors.some((s) => s.name === formData.department)
+                    ? [{ value: formData.department, label: formData.department }]
+                    : []),
+                ],
+              ]}
               error={errors.department?.[0]}
+              required
             />
           ) : null}
 

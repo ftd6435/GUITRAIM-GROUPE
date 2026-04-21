@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Briefcase, Users, TrendingUp, Globe, Award,
   Lightbulb, Shield, HeartHandshake, MapPin,
-  Clock, ArrowRight, Send, FileText, Upload, Loader2,
+  Clock, Calendar, ArrowRight, Send, FileText, Upload, Loader2,
   X, CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -22,6 +22,22 @@ const Careers = () => {
   const cvInputRef = useRef(null);
   const coverLetterInputRef = useRef(null);
   const [spontaneousFiles, setSpontaneousFiles] = useState({ cv_file: null, cover_letter_file: null });
+  const spontaneousCvInputRef = useRef(null);
+  const spontaneousCoverLetterInputRef = useRef(null);
+
+  const [spontaneousForm, setSpontaneousForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    sector: 'construction',
+    experience_level: 'junior',
+    message: '',
+    gdpr_accepted: false,
+    newsletter: false,
+  });
+  const [spontaneousSubmitting, setSpontaneousSubmitting] = useState(false);
+  const [spontaneousErrors, setSpontaneousErrors] = useState({});
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -102,6 +118,52 @@ const Careers = () => {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSpontaneousApply = async (e) => {
+    e.preventDefault();
+    setSpontaneousSubmitting(true);
+    setSpontaneousErrors({});
+
+    const data = new FormData();
+    data.append('first_name', spontaneousForm.first_name);
+    data.append('last_name', spontaneousForm.last_name);
+    data.append('email', spontaneousForm.email);
+    data.append('phone', spontaneousForm.phone);
+    if (spontaneousForm.sector) data.append('sector', spontaneousForm.sector);
+    if (spontaneousForm.experience_level) data.append('experience_level', spontaneousForm.experience_level);
+    if (spontaneousForm.message) data.append('message', spontaneousForm.message);
+    if (spontaneousFiles.cv_file) data.append('cv_file', spontaneousFiles.cv_file);
+    if (spontaneousFiles.cover_letter_file) data.append('cover_letter_file', spontaneousFiles.cover_letter_file);
+
+    try {
+      await api.post('/applications', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setIsSuccessModalOpen(true);
+      setSpontaneousForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        sector: 'construction',
+        experience_level: 'junior',
+        message: '',
+        gdpr_accepted: false,
+        newsletter: false,
+      });
+      setSpontaneousFiles({ cv_file: null, cover_letter_file: null });
+      if (spontaneousCvInputRef.current) spontaneousCvInputRef.current.value = '';
+      if (spontaneousCoverLetterInputRef.current) spontaneousCoverLetterInputRef.current.value = '';
+    } catch (error) {
+      if (error.errors) {
+        setSpontaneousErrors(error.errors);
+      } else {
+        console.error('Failed to submit spontaneous application:', error);
+      }
+    } finally {
+      setSpontaneousSubmitting(false);
     }
   };
   const benefits = [
@@ -259,17 +321,20 @@ const Careers = () => {
                       <div className="flex flex-wrap items-center gap-3">
                         <h3 className="text-xl lg:text-2xl font-bold text-[#1A3A5C]">{job.title}</h3>
                         <span className="px-3 py-1 rounded-full bg-[#1A3A5C]/5 text-[#1A3A5C] text-[10px] font-bold uppercase tracking-wider">
-                          {job.department || 'Général'}
+                          {job.sector?.name || job.sector || 'Général'}
                         </span>
                         <span className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-bold uppercase tracking-wider">
-                          {job.type}
+                          {job.contract_type || job.type || '—'}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm font-bold text-[hsla(210,20%,60%,1)]">
                         <div className="flex items-center gap-1.5"><MapPin size={16} className="text-[#4A8BC2]" /> {job.location}</div>
-                        {job.salary_range && (
-                          <div className="flex items-center gap-1.5"><Clock size={16} className="text-[#4A8BC2]" /> {job.salary_range}</div>
-                        )}
+                        {job.published_at || job.created_at ? (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={16} className="text-[#4A8BC2]" />
+                            {new Date(job.published_at || job.created_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                     <Button
@@ -303,14 +368,45 @@ const Careers = () => {
             </p>
           </div>
 
-          <form className="max-w-4xl mx-auto space-y-8">
+          <form onSubmit={handleSpontaneousApply} className="max-w-4xl mx-auto space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Input label="Prénom *" placeholder="votre prénom" required />
-              <Input label="Nom *" placeholder="votre nom" required />
-              <Input label="Email *" type="email" placeholder="votre@email.com" required />
-              <Input label="Téléphone *" placeholder="+224 xx xx xx xx" required />
+              <Input
+                label="Prénom *"
+                placeholder="votre prénom"
+                value={spontaneousForm.first_name}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, first_name: e.target.value }))}
+                error={spontaneousErrors.first_name?.[0]}
+                required
+              />
+              <Input
+                label="Nom *"
+                placeholder="votre nom"
+                value={spontaneousForm.last_name}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, last_name: e.target.value }))}
+                error={spontaneousErrors.last_name?.[0]}
+                required
+              />
+              <Input
+                label="Email *"
+                type="email"
+                placeholder="votre@email.com"
+                value={spontaneousForm.email}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, email: e.target.value }))}
+                error={spontaneousErrors.email?.[0]}
+                required
+              />
+              <Input
+                label="Téléphone *"
+                placeholder="+224 xx xx xx xx"
+                value={spontaneousForm.phone}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, phone: e.target.value }))}
+                error={spontaneousErrors.phone?.[0]}
+                required
+              />
               <Select
                 label="Secteur d'Intérêt"
+                value={spontaneousForm.sector}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, sector: e.target.value }))}
                 options={[
                   { label: 'Construction', value: 'construction' },
                   { label: 'Immobilier', value: 'immobilier' },
@@ -321,6 +417,8 @@ const Careers = () => {
               />
               <Select
                 label="Niveau d'Expérience"
+                value={spontaneousForm.experience_level}
+                onChange={(e) => setSpontaneousForm((p) => ({ ...p, experience_level: e.target.value }))}
                 options={[
                   { label: 'Junior (0-2 ans)', value: 'junior' },
                   { label: 'Intermédiaire (3-5 ans)', value: 'mid' },
@@ -329,7 +427,14 @@ const Careers = () => {
                 ]}
               />
             </div>
-            <Textarea label="Message de Motivation (optionnel)" placeholder="Parlez-nous de votre motivation et de vos aspirations..." className="min-h-[150px]" />
+            <Textarea
+              label="Message de Motivation (optionnel)"
+              placeholder="Parlez-nous de votre motivation et de vos aspirations..."
+              className="min-h-[150px]"
+              value={spontaneousForm.message}
+              onChange={(e) => setSpontaneousForm((p) => ({ ...p, message: e.target.value }))}
+              error={spontaneousErrors.message?.[0]}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
@@ -341,6 +446,7 @@ const Careers = () => {
                 </label>
                 <label className="block relative cursor-pointer">
                   <input
+                    ref={spontaneousCvInputRef}
                     type="file"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -362,6 +468,7 @@ const Careers = () => {
                     </span>
                   </div>
                 </label>
+                {spontaneousErrors.cv_file?.[0] ? <p className="text-xs font-medium text-[#D64545] ml-1">{spontaneousErrors.cv_file[0]}</p> : null}
               </div>
               <div className="space-y-3">
                 <label className="text-sm font-bold text-[#1A3A5C] ml-1 flex items-center gap-2">
@@ -372,6 +479,7 @@ const Careers = () => {
                 </label>
                 <label className="block relative cursor-pointer">
                   <input
+                    ref={spontaneousCoverLetterInputRef}
                     type="file"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -392,23 +500,40 @@ const Careers = () => {
                     </span>
                   </div>
                 </label>
+                {spontaneousErrors.cover_letter_file?.[0] ? <p className="text-xs font-medium text-[#D64545] ml-1">{spontaneousErrors.cover_letter_file[0]}</p> : null}
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" className="w-5 h-5 rounded border-[#E0E6ED] text-[#1A3A5C] focus:ring-[#1A3A5C]" required />
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded border-[#E0E6ED] text-[#1A3A5C] focus:ring-[#1A3A5C]"
+                  checked={spontaneousForm.gdpr_accepted}
+                  onChange={(e) => setSpontaneousForm((p) => ({ ...p, gdpr_accepted: e.target.checked }))}
+                  required
+                />
                 <span className="text-sm font-medium text-[hsla(210,20%,40%,1)]">J'accepte que mes données soient traitées dans le cadre de ma candidature *</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" className="w-5 h-5 rounded border-[#E0E6ED] text-[#1A3A5C] focus:ring-[#1A3A5C]" />
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded border-[#E0E6ED] text-[#1A3A5C] focus:ring-[#1A3A5C]"
+                  checked={spontaneousForm.newsletter}
+                  onChange={(e) => setSpontaneousForm((p) => ({ ...p, newsletter: e.target.checked }))}
+                />
                 <span className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Je souhaite recevoir les actualités de GUITRAIM GROUPE</span>
               </label>
             </div>
 
             <div className="pt-4 flex justify-center">
-              <Button className="h-16 px-16 rounded-[24px] bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20 gap-3">
-                <Send size={20} /> Envoyer ma Candidature
+              <Button
+                type="submit"
+                disabled={spontaneousSubmitting}
+                className="h-16 px-16 rounded-[24px] bg-[#1A3A5C] hover:bg-[#1A3A5C]/90 text-white font-bold text-lg shadow-xl shadow-[#1A3A5C]/20 gap-3"
+              >
+                {spontaneousSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                Envoyer ma Candidature
               </Button>
             </div>
             <p className="text-center text-xs font-medium text-[hsla(210,20%,60%,1)] pt-4 italic">
@@ -457,13 +582,23 @@ const Careers = () => {
                 <h4 className="font-bold text-[#1A3A5C]">Détails</h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                    <Briefcase size={16} className="text-[#4A8BC2]" />
+                    {selectedJob?.sector?.name || selectedJob?.sector || '—'}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
                     <MapPin size={16} className="text-[#4A8BC2]" />
                     {selectedJob?.location}
                   </div>
                   <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
                     <Clock size={16} className="text-[#4A8BC2]" />
-                    {selectedJob?.type}
+                    {selectedJob?.contract_type || selectedJob?.type || '—'}
                   </div>
+                  {selectedJob?.published_at || selectedJob?.created_at ? (
+                    <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
+                      <Calendar size={16} className="text-[#4A8BC2]" />
+                      {new Date(selectedJob.published_at || selectedJob.created_at).toLocaleDateString('fr-FR')}
+                    </div>
+                  ) : null}
                   {selectedJob?.salary_range && (
                     <div className="flex items-center gap-3 text-sm font-medium text-[hsla(210,20%,40%,1)]">
                       <TrendingUp size={16} className="text-[#4A8BC2]" />

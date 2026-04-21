@@ -16,6 +16,9 @@ class AdminApplicationReceived extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public $tries = 5;
+    public $backoff = [30, 60, 120, 300];
+
     public function __construct(public Application $application) {}
 
     public function envelope(): Envelope

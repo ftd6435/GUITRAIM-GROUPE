@@ -13,6 +13,17 @@ class TeamController extends Controller
 {
     use ApiResponses, ImageUpload;
 
+    public function adminIndex(Request $request)
+    {
+        $query = TeamMember::with(['createdBy', 'updatedBy']);
+
+        if ($request->has('department')) {
+            $query->where('department', $request->department);
+        }
+
+        return $this->successResponse($query->get());
+    }
+
     public function index(Request $request)
     {
         $query = TeamMember::with(['createdBy', 'updatedBy']);
@@ -21,9 +32,7 @@ class TeamController extends Controller
             $query->where('department', $request->department);
         }
 
-        if (! Auth::guard('sanctum')->check()) {
-            $query->where('is_visible', true);
-        }
+        $query->where('is_visible', true);
 
         return $this->successResponse($query->get());
     }

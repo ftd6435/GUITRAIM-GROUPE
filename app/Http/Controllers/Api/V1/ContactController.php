@@ -9,6 +9,7 @@ use App\Models\Contact;
 use App\Models\Setting;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
@@ -18,6 +19,23 @@ class ContactController extends Controller
     public function index()
     {
         return $this->successResponse(Contact::with(['createdBy', 'updatedBy'])->latest()->get());
+    }
+
+    public function summary(Request $request)
+    {
+        $since = Carbon::now()->subDay();
+
+        $new24h = (int) Contact::query()
+            ->where('created_at', '>=', $since)
+            ->count();
+
+        $total = (int) Contact::query()->count();
+
+        return $this->successResponse([
+            'new_24h' => $new24h,
+            'total' => $total,
+            'since' => $since->toIso8601String(),
+        ]);
     }
 
     public function store(Request $request)

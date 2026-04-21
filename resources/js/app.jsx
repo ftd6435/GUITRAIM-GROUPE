@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
@@ -35,6 +35,10 @@ import Newsletter from "./Admin/pages/Newsletter";
 import Users from "./Admin/pages/Users";
 import Profile from "./Admin/pages/Profile";
 import Login from "./Admin/pages/Login";
+import Clients from "./Admin/pages/Clients";
+import Quotes from "./Admin/pages/Quotes";
+import Invoices from "./Admin/pages/Invoices";
+import CrmDashboard from "./Admin/pages/CrmDashboard";
 
 // Frontend Imports (To be created)
 import Home from "./Frontend/pages/Home";
@@ -54,7 +58,7 @@ import { ToastProvider } from "./Components/ui/Toast";
 import Cookies from 'js-cookie';
 
 const ProtectedRoute = ({ children }) => {
-  const token = Cookies.get('auth_token');
+  const token = Cookies.get('auth_token') || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
   if (!token) {
     return <Navigate to="/auth/login" replace />;
   }
@@ -111,7 +115,7 @@ const App = () => {
                                 <Route path="services" element={<Services />} />
                                 <Route path="projects" element={<Projects />} />
 
-                                <Route path="blog">
+                                <Route path="blog" element={<Outlet />}>
                                     <Route path="articles" element={<Articles />} />
                                     <Route path="comments" element={<BlogComments />} />
                                     <Route path="categories" element={<Categories />} />
@@ -130,6 +134,13 @@ const App = () => {
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="users" element={<Users />} />
                                 <Route path="profile" element={<Profile />} />
+                                <Route path="crm" element={<Outlet />}>
+                                    <Route index element={<CrmDashboard />} />
+                                    <Route path="dashboard" element={<Navigate to="/admin/crm" replace />} />
+                                    <Route path="clients" element={<Clients />} />
+                                    <Route path="quotes" element={<Quotes />} />
+                                    <Route path="invoices" element={<Invoices />} />
+                                </Route>
 
                                 <Route
                                     path="*"

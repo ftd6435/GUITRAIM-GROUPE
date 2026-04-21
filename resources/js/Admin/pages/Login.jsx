@@ -46,10 +46,13 @@ const Login = () => {
           sameSite: 'strict'
         });
 
+        localStorage.setItem('auth_token', response.token);
         localStorage.setItem('user', JSON.stringify(response.data));
 
         // Set authorization header for future requests
-        api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+        if (api.defaults.headers?.common) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+        }
         navigate('/admin');
       }
     } catch (err) {

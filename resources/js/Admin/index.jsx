@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import Sectors from './pages/Sectors';
@@ -22,6 +22,10 @@ import Newsletter from './pages/Newsletter';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import Clients from './pages/Clients';
+import Quotes from './pages/Quotes';
+import Invoices from './pages/Invoices';
+import CrmDashboard from './pages/CrmDashboard';
 
 import Cookies from 'js-cookie';
 
@@ -49,7 +53,7 @@ const AdminApp = () => {
           <Route path="services" element={<Services />} />
           <Route path="projects" element={<Projects />} />
 
-          <Route path="blog">
+          <Route path="blog" element={<Outlet />}>
             <Route path="articles" element={<Articles />} />
             <Route path="categories" element={<Categories />} />
             <Route path="tags" element={<Tags />} />
@@ -67,6 +71,13 @@ const AdminApp = () => {
           <Route path="settings" element={<Settings />} />
           <Route path="users" element={<Users />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="crm" element={<Outlet />}>
+            <Route index element={<CrmDashboard />} />
+            <Route path="dashboard" element={<Navigate to="/admin/crm" replace />} />
+            <Route path="clients" element={<Clients />} />
+            <Route path="quotes" element={<Quotes />} />
+            <Route path="invoices" element={<Invoices />} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

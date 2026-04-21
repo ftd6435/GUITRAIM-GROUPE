@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Camera } from 'lucide-react';
+import { Phone, Mail, MapPin, Camera, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
 
 const FacebookIcon = ({ className }) => (
@@ -24,6 +24,10 @@ const XIcon = ({ className }) => (
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [settings, setSettings] = useState(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterFeedback, setNewsletterFeedback] = useState(null);
+  const [newsletterState, setNewsletterState] = useState('idle');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -37,17 +41,58 @@ const Footer = () => {
     fetchSettings();
   }, []);
 
+  useEffect(() => {
+    const pendingEmail = typeof window !== 'undefined' ? window.localStorage.getItem('newsletter_pending_email') : null;
+    if (pendingEmail) {
+      setNewsletterState('pending');
+      setNewsletterEmail(pendingEmail);
+    }
+  }, []);
+
   const contactInfo = useMemo(() => {
     return {
       address: settings?.address || 'Quartier Almamya, Commune de Kaloum, Conakry, Guinée',
       phone: settings?.phone || '+224 628 xx xx xx',
       email: settings?.email || 'contact@guitraimgroupe.gn',
+      legal_rccm: settings?.legal_rccm || '',
+      legal_nif: settings?.legal_nif || '',
+      bank_account_number: settings?.bank_account_number || '',
       facebook_url: settings?.facebook_url || '',
       linkedin_url: settings?.linkedin_url || '',
       x_url: settings?.x_url || '',
       instagram_url: settings?.instagram_url || '',
     };
   }, [settings]);
+
+  const handleNewsletterSubscribe = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+    try {
+      setNewsletterSubmitting(true);
+      setNewsletterFeedback(null);
+      const response = await api.post('/newsletter/subscribe', { email: newsletterEmail });
+      const state = response?.data?.state;
+      const email = response?.data?.email || newsletterEmail;
+
+      if (state === 'active') {
+        setNewsletterState('active');
+        if (typeof window !== 'undefined') window.localStorage.removeItem('newsletter_pending_email');
+        setNewsletterFeedback({ type: 'success', message: response?.message || 'Vous êtes déjà abonné.' });
+        setNewsletterEmail(email);
+        return;
+      }
+
+      setNewsletterState('pending');
+      if (typeof window !== 'undefined') window.localStorage.setItem('newsletter_pending_email', email);
+      setNewsletterEmail(email);
+      setNewsletterFeedback({ type: 'success', message: response?.message || 'Inscription en attente de confirmation.' });
+    } catch (error) {
+      const emailError = error?.errors?.email?.[0];
+      setNewsletterFeedback({ type: 'error', message: emailError || error?.message || 'Une erreur est survenue.' });
+    } finally {
+      setNewsletterSubmitting(false);
+    }
+  };
 
   return (
     <footer className="bg-white border-t border-[hsla(210,20%,94%,1)] pt-20 pb-10 flex justify-center">
@@ -161,12 +206,76 @@ const Footer = () => {
                 </a>
               ) : null}
             </div>
+
+            <div className="pt-4 space-y-3">
+              <h5 className="text-xs font-bold uppercase tracking-widest text-[#1A3A5C]">Newsletter</h5>
+              {newsletterState === 'pending' ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-[hsla(210,30%,20%,1)] break-words">
+                    {newsletterEmail}
+                  </div>
+                  <div className="text-xs font-medium text-[hsla(210,20%,55%,1)]">
+                    Inscription en attente. Confirmez votre adresse email via le lien envoyé.
+                  </div>
+                </div>
+              ) : newsletterState === 'active' ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-[hsla(210,30%,20%,1)] break-words">
+                    {newsletterEmail}
+                  </div>
+                  <div className="text-xs font-medium text-[hsla(210,20%,55%,1)]">
+                    Vous êtes déjà abonné à la newsletter.
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleNewsletterSubscribe} className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      placeholder="Votre email"
+                      required
+                      className="h-11 w-full rounded-xl border border-[#E0E6ED] bg-white px-4 text-sm font-semibold text-[hsla(210,30%,20%,1)] placeholder:text-[hsla(210,15%,55%,1)] focus:outline-none focus:ring-2 focus:ring-[#1A3A5C]/20 focus:border-[#1A3A5C]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={newsletterSubmitting}
+                      className="h-11 px-4 rounded-xl bg-[#1A3A5C] text-white font-bold text-sm hover:bg-[#1A3A5C]/90 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {newsletterSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
+                      S’abonner
+                    </button>
+                  </div>
+                  {newsletterFeedback ? (
+                    <div className={newsletterFeedback.type === 'success' ? 'text-xs font-semibold text-green-700' : 'text-xs font-semibold text-[#D64545]'}>
+                      {newsletterFeedback.message}
+                    </div>
+                  ) : (
+                    <div className="text-xs font-medium text-[hsla(210,20%,55%,1)]">
+                      Recevez nos actualités et opportunités.
+                    </div>
+                  )}
+                </form>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-[hsla(210,20%,94%,1)] flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-bold text-[hsla(210,20%,60%,1)]">
-          <p>© {currentYear} GUITRAIM GROUPE. Tous droits réservés.</p>
+          <div className="flex flex-col gap-2 items-center md:items-start">
+            <p>© {currentYear} GUITRAIM GROUPE. Tous droits réservés.</p>
+            {(contactInfo.legal_rccm || contactInfo.legal_nif || contactInfo.bank_account_number) ? (
+              <div className="text-[11px] font-semibold text-[hsla(210,20%,55%,1)] text-center md:text-left">
+                {contactInfo.legal_rccm ? `RCCM: ${contactInfo.legal_rccm}` : null}
+                {contactInfo.legal_rccm && contactInfo.legal_nif ? ' · ' : null}
+                {contactInfo.legal_nif ? `NIF: ${contactInfo.legal_nif}` : null}
+                {(contactInfo.legal_rccm || contactInfo.legal_nif) && contactInfo.bank_account_number ? ' · ' : null}
+                {contactInfo.bank_account_number ? `Banque: ${contactInfo.bank_account_number}` : null}
+              </div>
+            ) : null}
+          </div>
           <div className="flex items-center gap-6">
             <Link to="/mentions-legales" className="hover:text-[#1A3A5C]">Mentions légales</Link>
             <Link to="/politique-confidentialite" className="hover:text-[#1A3A5C]">Politique de confidentialité</Link>

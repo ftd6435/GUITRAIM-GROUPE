@@ -7,6 +7,7 @@ use App\Models\JobOffer;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class JobController extends Controller
@@ -54,6 +55,10 @@ class JobController extends Controller
             'is_visible' => 'boolean',
         ]);
 
+        if (($validated['is_visible'] ?? false) && empty($validated['published_at'])) {
+            $validated['published_at'] = Carbon::today()->toDateString();
+        }
+
         $validated['created_by'] = $request->user()->id;
         $validated['updated_by'] = $request->user()->id;
         $job = JobOffer::create($validated);
@@ -75,6 +80,10 @@ class JobController extends Controller
             'published_at' => 'nullable|date',
             'is_visible' => 'boolean',
         ]);
+
+        if (array_key_exists('is_visible', $validated) && $validated['is_visible'] && empty($validated['published_at']) && empty($job->published_at)) {
+            $validated['published_at'] = Carbon::today()->toDateString();
+        }
 
         $validated['updated_by'] = $request->user()->id;
         $job->update($validated);

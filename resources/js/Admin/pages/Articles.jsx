@@ -173,14 +173,33 @@ const Articles = () => {
     }
   };
 
+  const formatDateFr = (value) => {
+    if (!value) return '—';
+    const d = (() => {
+      if (value instanceof Date) return value;
+      if (typeof value === 'number') return new Date(value);
+      if (typeof value === 'string') {
+        const s = value.trim();
+        const fr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (fr) return new Date(`${fr[3]}-${fr[2]}-${fr[1]}T00:00:00`);
+        const sql = s.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+        if (sql) return new Date(`${sql[1]}T${sql[2]}`);
+        return new Date(s);
+      }
+      return new Date(NaN);
+    })();
+    if (Number.isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[hsla(210,30%,20%,1)]">Articles de Blog</h2>
           <p className="text-sm font-medium text-[hsla(210,20%,40%,1)]">Gérez vos publications de blog</p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="gap-2">
+        <Button onClick={() => handleOpenModal()} className="gap-2 w-full sm:w-auto">
           <Plus size={18} />
           Rédiger un Article
         </Button>
@@ -209,6 +228,7 @@ const Articles = () => {
                   <TR key={article.id}>
                     <TD>
                       <button
+                        type="button"
                         onClick={() => toggleStatus(article)}
                         className={cn(
                           "p-2 rounded-lg transition-colors",
@@ -243,10 +263,10 @@ const Articles = () => {
                         "px-2 py-1 rounded-full text-xs font-bold",
                         article.published ? "bg-[#E8F5F0] text-[#4CAF8D]" : "bg-[#FDEAEA] text-[#D64545]"
                       )}>
-                        {article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR') : '—'}
+                        {formatDateFr(article.published_at)}
                       </span>
                     </TD>
-                    <TD>{new Date(article.created_at).toLocaleDateString()}</TD>
+                    <TD>{formatDateFr(article.created_at)}</TD>
                     <TD className="text-right space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(article)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Pencil size={16} />
@@ -259,7 +279,7 @@ const Articles = () => {
                 ))}
                 {articles.length === 0 && (
                   <TR>
-                    <TD colSpan={5} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
+                    <TD colSpan={6} className="text-center py-12 text-[hsla(210,15%,55%,1)]">
                       Aucun article trouvé.
                     </TD>
                   </TR>

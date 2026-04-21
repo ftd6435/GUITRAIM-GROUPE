@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Traits\ApiResponses;
 use App\Traits\ImageUpload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
 class ApplicationController extends Controller
@@ -19,6 +20,29 @@ class ApplicationController extends Controller
     public function index()
     {
         return $this->successResponse(Application::with(['job', 'createdBy', 'updatedBy'])->latest()->get());
+    }
+
+    public function summary(Request $request)
+    {
+        $since = Carbon::now()->subDay();
+
+        $new = (int) Application::query()
+            ->where('status', 'new')
+            ->count();
+
+        $new24h = (int) Application::query()
+            ->where('status', 'new')
+            ->where('created_at', '>=', $since)
+            ->count();
+
+        $total = (int) Application::query()->count();
+
+        return $this->successResponse([
+            'new' => $new,
+            'new_24h' => $new24h,
+            'total' => $total,
+            'since' => $since->toIso8601String(),
+        ]);
     }
 
     public function show($id)

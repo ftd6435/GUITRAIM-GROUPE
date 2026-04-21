@@ -13,9 +13,13 @@ const api = axios.create({
 // Request interceptor for API calls
 api.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('auth_token');
+    const token = Cookies.get('auth_token') || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (config.headers?.set) {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
+      }
     }
     return config;
   },

@@ -22,6 +22,8 @@
 
   <div style="margin-top:18px;color:#6b7c93;font-size:12px;line-height:18px;">
     Merci de votre confiance.
+    <br />
+    Tel : (+224) 622 14 67 14 / 627 83 64 22
   </div>
 @endcomponent
 

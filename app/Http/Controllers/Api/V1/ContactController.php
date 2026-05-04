@@ -63,9 +63,7 @@ class ContactController extends Controller
             );
         }
 
-        Mail::to($contact->email)->queue(
-            (new VisitorContactConfirmation($contact))->delay(now()->addSeconds(10))
-        );
+        Mail::to($contact->email)->later(now()->addSeconds(10), new VisitorContactConfirmation($contact));
 
         return $this->successResponse($contact->load(['createdBy', 'updatedBy']), 'Message envoyé avec succès', 201);
     }

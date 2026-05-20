@@ -4,10 +4,14 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import { Card, CardContent } from '../../Components/ui/Card';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 
 const Newsletter = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [subscriberToDelete, setSubscriberToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchSubscribers = async () => {
     try {
@@ -25,13 +29,23 @@ const Newsletter = () => {
     fetchSubscribers();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet abonné ?')) return;
+  const handleDeleteClick = (id) => {
+    setSubscriberToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!subscriberToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/newsletter/${id}`);
+      await api.delete(`/newsletter/${subscriberToDelete}`);
+      setIsConfirmOpen(false);
+      setSubscriberToDelete(null);
       fetchSubscribers();
     } catch (error) {
       console.error('Échec de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -86,7 +100,7 @@ const Newsletter = () => {
                     </TD>
                     <TD>{new Date(subscriber.created_at).toLocaleDateString()}</TD>
                     <TD className="text-right space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(subscriber.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(subscriber.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -119,6 +133,17 @@ const Newsletter = () => {
           </Button>
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer l'abonné"
+        message="Cette action est irréversible. Supprimer cet abonné de la newsletter ?"
+        confirmText={deleting ? 'Suppression...' : 'Supprimer'}
+        cancelText="Annuler"
+        loading={deleting}
+      />
     </div>
   );
 };

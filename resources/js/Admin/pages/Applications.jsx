@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
@@ -14,6 +15,9 @@ const Applications = () => {
   const [selectedApp, setSelectedApp] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchApps = async () => {
     try {
@@ -54,13 +58,26 @@ const Applications = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette candidature ?')) return;
+  const handleDeleteClick = (id) => {
+    setApplicationToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!applicationToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/applications/${id}`);
+      await api.delete(`/applications/${applicationToDelete}`);
+      setIsConfirmOpen(false);
+      setApplicationToDelete(null);
       fetchApps();
+      if (selectedApp?.id === applicationToDelete) {
+        handleCloseModal();
+      }
     } catch (error) {
       console.error('Échec de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -123,7 +140,7 @@ const Applications = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(app)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Eye size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(app.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(app.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -237,6 +254,17 @@ const Applications = () => {
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer la candidature"
+        message="Cette action est irréversible. Supprimer cette candidature ?"
+        confirmText={deleting ? 'Suppression...' : 'Supprimer'}
+        cancelText="Annuler"
+        loading={deleting}
+      />
     </div>
   );
 };

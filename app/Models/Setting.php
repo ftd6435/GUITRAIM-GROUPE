@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = [
         'site_name',
         'logo',
@@ -23,6 +26,13 @@ class Setting extends Model
         'created_by',
         'updated_by',
     ];
+
+    protected $appends = ['logo_path'];
+
+    public function getLogoPathAttribute()
+    {
+        return $this->logo ? $this->getImageUrl($this->logo, 'settings') : null;
+    }
 
     public function createdBy()
     {

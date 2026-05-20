@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PageController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index(Request $request)
     {
@@ -77,21 +77,21 @@ class PageController extends Controller
             if ($page->history_image) {
                 $this->deleteImage($page->history_image, 'pages/');
             }
-            $validated['history_image'] = $this->imageUpload($request->file('history_image'), 'pages');
+            $validated['history_image'] = $this->uploadImage($request->file('history_image'), 'pages');
         }
 
         if ($request->hasFile('vision_image')) {
             if ($page->vision_image) {
                 $this->deleteImage($page->vision_image, 'pages/');
             }
-            $validated['vision_image'] = $this->imageUpload($request->file('vision_image'), 'pages');
+            $validated['vision_image'] = $this->uploadImage($request->file('vision_image'), 'pages');
         }
 
         if ($request->hasFile('hero_image')) {
             if ($page->hero_image) {
                 $this->deleteImage($page->hero_image, 'pages/');
             }
-            $validated['hero_image'] = $this->imageUpload($request->file('hero_image'), 'pages');
+            $validated['hero_image'] = $this->uploadImage($request->file('hero_image'), 'pages');
         }
 
         if ($request->hasFile('hero_images')) {
@@ -107,7 +107,7 @@ class PageController extends Controller
 
             $uploaded = [];
             foreach ($request->file('hero_images') as $imageFile) {
-                $uploaded[] = $this->imageUpload($imageFile, 'pages');
+                $uploaded[] = $this->uploadImage($imageFile, 'pages');
             }
 
             $nextData = is_array($validated['data'] ?? null) ? $validated['data'] : ($page->data ?? []);

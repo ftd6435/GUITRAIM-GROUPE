@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class Page extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['title', 'slug', 'content', 'data', 'history_image', 'vision_image', 'hero_image', 'meta_title', 'meta_description', 'created_by', 'updated_by'];
 
     protected $casts = [
@@ -16,17 +19,17 @@ class Page extends Model
 
     public function getHistoryImagePathAttribute()
     {
-        return $this->history_image ? asset('storage/images/pages/' . $this->history_image) : null;
+        return $this->history_image ? $this->getImageUrl($this->history_image, 'pages') : null;
     }
 
     public function getVisionImagePathAttribute()
     {
-        return $this->vision_image ? asset('storage/images/pages/' . $this->vision_image) : null;
+        return $this->vision_image ? $this->getImageUrl($this->vision_image, 'pages') : null;
     }
 
     public function getHeroImagePathAttribute()
     {
-        return $this->hero_image ? asset('storage/images/pages/' . $this->hero_image) : null;
+        return $this->hero_image ? $this->getImageUrl($this->hero_image, 'pages') : null;
     }
 
     public function getHeroImagesPathsAttribute()
@@ -41,7 +44,7 @@ class Page extends Model
             if (! $filename) {
                 return null;
             }
-            return asset('storage/images/pages/' . $filename);
+            return $this->getImageUrl($filename, 'pages');
         }, $images)));
     }
 

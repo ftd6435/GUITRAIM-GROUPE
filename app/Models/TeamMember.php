@@ -2,22 +2,25 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class TeamMember extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['is_visible', 'name', 'avatar', 'position', 'department', 'bio', 'image', 'linkedin_url', 'is_management', 'created_by', 'updated_by'];
 
     protected $appends = ['avatar_path', 'image_path'];
 
     public function getAvatarPathAttribute()
     {
-        return $this->avatar ? asset('storage/images/avatars/'.$this->avatar) : null;
+        return $this->avatar ? $this->getImageUrl($this->avatar, 'avatars') : null;
     }
 
     public function getImagePathAttribute()
     {
-        return $this->image ? asset('storage/images/team/'.$this->image) : null;
+        return $this->image ? $this->getImageUrl($this->image, 'team') : null;
     }
 
     public function createdBy()

@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -43,7 +43,7 @@ class SettingController extends Controller
             if ($settings->logo) {
                 $this->deleteImage($settings->logo, 'settings/');
             }
-            $validated['logo'] = $this->imageUpload($request->file('logo'), 'settings');
+            $validated['logo'] = $this->uploadImage($request->file('logo'), 'settings');
         }
 
         if (! $settings->created_by) {

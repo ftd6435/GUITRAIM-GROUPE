@@ -35,6 +35,9 @@ const Projects = () => {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [isImageConfirmOpen, setIsImageConfirmOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null);
+  const [imageDeleting, setImageDeleting] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchData = async () => {
@@ -180,16 +183,25 @@ const Projects = () => {
     }
   };
 
-  const handleDeleteImage = async (imageId) => {
-    if (!window.confirm('Supprimer cette image ?')) return;
+  const handleDeleteImageClick = (imageId) => {
+    setImageToDelete(imageId);
+    setIsImageConfirmOpen(true);
+  };
+
+  const handleDeleteImageConfirm = async () => {
+    if (!imageToDelete) return;
+    setImageDeleting(true);
     try {
-      await api.delete(`/projects/images/${imageId}`);
-      // Refresh project images
+      await api.delete(`/projects/images/${imageToDelete}`);
       const updatedProject = await api.get(`/projects/${editingProject.slug}`);
       setEditingProject(updatedProject.data);
       fetchData();
+      setIsImageConfirmOpen(false);
+      setImageToDelete(null);
     } catch (error) {
       console.error('Échec de la suppression de l\'image');
+    } finally {
+      setImageDeleting(false);
     }
   };
 
@@ -439,7 +451,7 @@ const Projects = () => {
                     <img src={image.image_path} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      onClick={() => handleDeleteImage(image.id)}
+                      onClick={() => handleDeleteImageClick(image.id)}
                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[#D64545] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#D64545]/90 shadow-lg"
                     >
                       <X size={16} />
@@ -478,9 +490,17 @@ const Projects = () => {
         title="Supprimer le Projet"
         message="Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible."
       />
+
+      <ConfirmModal
+        isOpen={isImageConfirmOpen}
+        onClose={() => setIsImageConfirmOpen(false)}
+        onConfirm={handleDeleteImageConfirm}
+        loading={imageDeleting}
+        title="Supprimer l'image"
+        message="Êtes-vous sûr de vouloir supprimer cette image ? Cette action est irréversible."
+      />
     </div>
   );
 };
 
 export default Projects;
-

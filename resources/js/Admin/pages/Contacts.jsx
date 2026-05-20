@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import Button from '../../Components/ui/Button';
 import { Table, THead, TBody, TR, TH, TD } from '../../Components/ui/Table';
 import Modal from '../../Components/ui/Modal';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 import { Card, CardContent } from '../../Components/ui/Card';
 import { cn } from '../../utils/utils';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
@@ -13,6 +14,10 @@ const Contacts = () => {
   const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [closeDetailsAfterDelete, setCloseDetailsAfterDelete] = useState(false);
 
   const fetchContacts = async () => {
     try {
@@ -40,13 +45,28 @@ const Contacts = () => {
     setSelectedContact(null);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) return;
+  const handleDeleteClick = (id, opts = { closeDetails: false }) => {
+    setContactToDelete(id);
+    setCloseDetailsAfterDelete(!!opts.closeDetails);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contactToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/contact/${id}`);
+      await api.delete(`/contact/${contactToDelete}`);
+      setIsConfirmOpen(false);
+      setContactToDelete(null);
       fetchContacts();
+      if (closeDetailsAfterDelete) {
+        handleCloseModal();
+      }
     } catch (error) {
       console.error('Échec de la suppression');
+    } finally {
+      setDeleting(false);
+      setCloseDetailsAfterDelete(false);
     }
   };
 
@@ -92,7 +112,7 @@ const Contacts = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(contact)} className="text-[#4A8BC2] hover:bg-[#4A8BC2]/10">
                         <Eye size={16} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(contact.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(contact.id)} className="text-[#D64545] hover:bg-[#D64545]/10">
                         <Trash2 size={16} />
                       </Button>
                     </TD>
@@ -167,7 +187,7 @@ const Contacts = () => {
                   <Button
                     variant="secondary"
                     className="w-full justify-start gap-3"
-                    onClick={() => handleDelete(selectedContact.id).then(handleCloseModal)}
+                    onClick={() => handleDeleteClick(selectedContact.id, { closeDetails: true })}
                   >
                     <Trash2 size={18} className="text-[#D64545]" />
                     Archiver / Supprimer
@@ -191,9 +211,19 @@ const Contacts = () => {
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer le message"
+        message="Cette action est irréversible. Supprimer ce message de contact ?"
+        confirmText={deleting ? 'Suppression...' : 'Supprimer'}
+        cancelText="Annuler"
+        loading={deleting}
+      />
     </div>
   );
 };
 
 export default Contacts;
-

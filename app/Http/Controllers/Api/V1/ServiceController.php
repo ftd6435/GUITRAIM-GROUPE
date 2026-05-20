@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceImage;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index(Request $request)
     {
@@ -64,7 +64,7 @@ class ServiceController extends Controller
         $validated['updated_by'] = Auth::id();
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $this->imageUpload($request->file('image'), 'services');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'services');
         }
 
         $service = Service::create($validated);
@@ -72,7 +72,7 @@ class ServiceController extends Controller
         if ($request->hasFile('images')) {
             $uploaded = [];
             foreach ($request->file('images') as $index => $imageFile) {
-                $imageName = $this->imageUpload($imageFile, 'services');
+                $imageName = $this->uploadImage($imageFile, 'services');
                 $uploaded[] = ServiceImage::create([
                     'service_id' => $service->id,
                     'image' => $imageName,
@@ -109,7 +109,7 @@ class ServiceController extends Controller
             if ($service->image) {
                 $this->deleteImage($service->image, 'services/');
             }
-            $validated['image'] = $this->imageUpload($request->file('image'), 'services');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'services');
         }
 
         $validated['updated_by'] = Auth::id();
@@ -123,7 +123,7 @@ class ServiceController extends Controller
             }
 
             foreach ($request->file('images') as $index => $imageFile) {
-                $imageName = $this->imageUpload($imageFile, 'services');
+                $imageName = $this->uploadImage($imageFile, 'services');
                 ServiceImage::create([
                     'service_id' => $service->id,
                     'image' => $imageName,

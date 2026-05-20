@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class BlogPost extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['title', 'slug', 'category_id', 'excerpt', 'content', 'image', 'reading_time', 'published_at', 'author_id', 'created_by', 'updated_by'];
 
     protected $appends = ['image_path', 'published', 'summary'];
 
     public function getImagePathAttribute()
     {
-        return $this->image ? asset('storage/images/blog/' . $this->image) : null;
+        return $this->image ? $this->getImageUrl($this->image, 'blog') : null;
     }
 
     public function getPublishedAttribute()

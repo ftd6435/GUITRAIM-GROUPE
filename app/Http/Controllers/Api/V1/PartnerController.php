@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PartnerController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -34,7 +34,7 @@ class PartnerController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $this->imageUpload($request->file('logo'), 'partners');
+            $validated['logo'] = $this->uploadImage($request->file('logo'), 'partners');
         }
 
         $validated['created_by'] = $request->user()->id;
@@ -59,7 +59,7 @@ class PartnerController extends Controller
             if ($partner->logo) {
                 $this->deleteImage($partner->logo, 'partners/');
             }
-            $validated['logo'] = $this->imageUpload($request->file('logo'), 'partners');
+            $validated['logo'] = $this->uploadImage($request->file('logo'), 'partners');
         }
 
         $validated['updated_by'] = $request->user()->id;

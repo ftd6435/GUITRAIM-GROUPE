@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\CloudflareUpload;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,6 +14,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+    use CloudflareUpload;
 
     /**
      * The attributes that are mass assignable.
@@ -32,7 +34,7 @@ class User extends Authenticatable
 
     public function getAvatarPathAttribute()
     {
-        return $this->avatar ? asset('storage/images/avatars/'.$this->avatar) : null;
+        return $this->avatar ? $this->getImageUrl($this->avatar, 'avatars') : null;
     }
 
     public function blogPosts()

@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class ProjectImage extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['project_id', 'image_url', 'created_by', 'updated_by'];
 
     protected $appends = ['image_path'];
 
     public function getImagePathAttribute()
     {
-        return $this->image_url ? asset('storage/images/projects/'.$this->image_url) : null;
+        return $this->image_url ? $this->getImageUrl($this->image_url, 'projects') : null;
     }
 
     public function project()

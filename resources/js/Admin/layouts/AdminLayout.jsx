@@ -330,8 +330,8 @@ const AdminLayout = () => {
                 >
                   <span className="sr-only">Profil</span>
                   <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                    {user?.avatar ? (
-                      <img src={`/storage/images/avatars/${user.avatar}`} alt="" className="w-full h-full object-cover" />
+                    {user?.avatar_path || user?.avatar ? (
+                      <img src={user?.avatar_path || `/storage/images/avatars/${user.avatar}`} alt="" className="w-full h-full object-cover" />
                     ) : (
                       initials
                     )}

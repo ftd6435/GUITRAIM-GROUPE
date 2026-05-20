@@ -18,6 +18,7 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../../utils/utils";
 import api from "../../utils/api";
+import ConfirmModal from "../../Components/ui/ConfirmModal";
 
 const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/admin" },
@@ -91,6 +92,8 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [openSubmenu, setOpenSubmenu] = React.useState(null);
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = React.useState(false);
+    const [loggingOut, setLoggingOut] = React.useState(false);
 
     const toggleSubmenu = (label) => {
         setOpenSubmenu(openSubmenu === label ? null : label);
@@ -107,8 +110,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     }, [location.pathname]);
 
     const handleLogout = async () => {
-        if (!window.confirm("Êtes-vous sûr de vouloir vous déconnecter ?"))
-            return;
+        setIsLogoutConfirmOpen(true);
+    };
+
+    const handleLogoutConfirm = async () => {
+        if (loggingOut) return;
+        setLoggingOut(true);
         try {
             await api.post("/auth/logout");
         } catch (err) {
@@ -119,6 +126,8 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             delete api.defaults.headers.common["Authorization"];
             navigate("/auth/login");
             onClose();
+            setIsLogoutConfirmOpen(false);
+            setLoggingOut(false);
         }
     };
 
@@ -233,6 +242,18 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                     <span>Déconnexion</span>
                 </button>
             </div>
+
+            <ConfirmModal
+                isOpen={isLogoutConfirmOpen}
+                onClose={() => setIsLogoutConfirmOpen(false)}
+                onConfirm={handleLogoutConfirm}
+                title="Confirmer la déconnexion"
+                message="Voulez-vous vraiment vous déconnecter ?"
+                confirmText={loggingOut ? "Déconnexion..." : "Se déconnecter"}
+                cancelText="Annuler"
+                loading={loggingOut}
+                variant="danger"
+            />
         </aside>
     );
 };

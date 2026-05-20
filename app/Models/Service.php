@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['is_visible', 'sector_id', 'title', 'slug', 'description', 'content', 'image', 'created_by', 'updated_by'];
 
     protected $appends = ['image_path'];
 
     public function getImagePathAttribute()
     {
-        return $this->image ? asset('storage/images/services/' . $this->image) : null;
+        return $this->image ? $this->getImageUrl($this->image, 'services') : null;
     }
 
     public function sector()

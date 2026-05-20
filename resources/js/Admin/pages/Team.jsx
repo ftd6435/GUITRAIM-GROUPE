@@ -74,7 +74,7 @@ const Team = () => {
         avatar: null,
         is_visible: !!member.is_visible
       });
-      setPreviewUrl(member.avatar ? `/storage/images/avatars/${member.avatar}` : null);
+      setPreviewUrl(member.avatar_path || (member.avatar ? `/storage/images/avatars/${member.avatar}` : null));
     } else {
       setEditingMember(null);
       setFormData({ name: '', position: '', department: '', is_management: true, bio: '', avatar: null, is_visible: true });
@@ -218,7 +218,7 @@ const Team = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] overflow-hidden">
                           {member.avatar ? (
-                            <img src={`/storage/images/avatars/${member.avatar}`} alt="" className="w-full h-full object-cover" />
+                            <img src={member.avatar_path || `/storage/images/avatars/${member.avatar}`} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <User className="text-[hsla(210,15%,55%,1)]" size={20} />
                           )}

@@ -69,7 +69,7 @@ const Users = () => {
         avatar: null,
         is_active: !!user.is_active
       });
-      setPreviewUrl(user.avatar ? `/storage/images/avatars/${user.avatar}` : null);
+      setPreviewUrl(user.avatar_path || (user.avatar ? `/storage/images/avatars/${user.avatar}` : null));
     } else {
       setEditingUser(null);
       setFormData({
@@ -235,7 +235,7 @@ const Users = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] text-[#1A3A5C] overflow-hidden">
                           {user.avatar ? (
-                            <img src={`/storage/images/avatars/${user.avatar}`} alt="" className="w-full h-full object-cover" />
+                            <img src={user.avatar_path || `/storage/images/avatars/${user.avatar}`} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <UserIcon size={20} />
                           )}

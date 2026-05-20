@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Testimonial;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TestimonialController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -38,11 +38,11 @@ class TestimonialController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $this->imageUpload($request->file('image'), 'testimonials');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'testimonials');
         }
 
         if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+            $validated['avatar'] = $this->uploadImage($request->file('avatar'), 'avatars');
         }
 
         $validated['created_by'] = $request->user()->id;
@@ -71,14 +71,14 @@ class TestimonialController extends Controller
             if ($testimonial->image) {
                 $this->deleteImage($testimonial->image, 'testimonials/');
             }
-            $validated['image'] = $this->imageUpload($request->file('image'), 'testimonials');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'testimonials');
         }
 
         if ($request->hasFile('avatar')) {
             if ($testimonial->avatar) {
                 $this->deleteImage($testimonial->avatar, 'avatars/');
             }
-            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+            $validated['avatar'] = $this->uploadImage($request->file('avatar'), 'avatars');
         }
 
         $validated['updated_by'] = $request->user()->id;

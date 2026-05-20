@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectImage;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index(Request $request)
     {
@@ -127,7 +127,7 @@ class ProjectController extends Controller
 
         $uploadedImages = [];
         foreach ($request->file('images') as $imageFile) {
-            $imageName = $this->imageUpload($imageFile, 'projects');
+            $imageName = $this->uploadImage($imageFile, 'projects');
             $projectImage = ProjectImage::create([
                 'project_id' => $project->id,
                 'image_url' => $imageName,

@@ -42,7 +42,7 @@ const Profile = () => {
         current_password: '',
         avatar: null
       });
-      setPreviewUrl(response.data.avatar ? `/storage/images/avatars/${response.data.avatar}` : null);
+      setPreviewUrl(response.data.avatar_path || (response.data.avatar ? `/storage/images/avatars/${response.data.avatar}` : null));
     } catch (error) {
       console.error('Échec de la récupération du profil');
     } finally {

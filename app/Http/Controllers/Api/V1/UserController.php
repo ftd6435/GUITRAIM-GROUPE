@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -44,7 +44,7 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+            $validated['avatar'] = $this->uploadImage($request->file('avatar'), 'avatars');
         }
 
         $validated['password'] = Hash::make($validated['password']);
@@ -158,7 +158,7 @@ class UserController extends Controller
             if ($user->avatar) {
                 $this->deleteImage($user->avatar, 'avatars/');
             }
-            $validated['avatar'] = $this->imageUpload($request->file('avatar'), 'avatars');
+            $validated['avatar'] = $this->uploadImage($request->file('avatar'), 'avatars');
         }
 
         $user->update($validated);

@@ -8,14 +8,15 @@ use App\Mail\Application\ApplicantApplicationConfirmation;
 use App\Models\Application;
 use App\Models\Setting;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
+
 class ApplicationController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -68,11 +69,11 @@ class ApplicationController extends Controller
         ]);
 
         if ($request->hasFile('cv_file')) {
-            $validated['cv_file'] = $this->fileUpload($request->file('cv_file'), 'applications/cvs');
+            $validated['cv_file'] = $this->uploadFile($request->file('cv_file'), 'applications/cvs');
         }
 
         if ($request->hasFile('cover_letter_file')) {
-            $validated['cover_letter_file'] = $this->fileUpload($request->file('cover_letter_file'), 'applications/letters');
+            $validated['cover_letter_file'] = $this->uploadFile($request->file('cover_letter_file'), 'applications/letters');
         }
 
         $userId = $request->user()?->id;

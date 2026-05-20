@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index(Request $request)
     {
@@ -83,7 +83,7 @@ class BlogController extends Controller
         $validated['updated_by'] = $request->user()->id;
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $this->imageUpload($request->file('image'), 'blog');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'blog');
         }
 
         if (! isset($validated['reading_time']) || ! $validated['reading_time']) {
@@ -136,7 +136,7 @@ class BlogController extends Controller
             if ($post->image) {
                 $this->deleteImage($post->image, 'blog/');
             }
-            $validated['image'] = $this->imageUpload($request->file('image'), 'blog');
+            $validated['image'] = $this->uploadImage($request->file('image'), 'blog');
         }
 
         $validated['updated_by'] = $request->user()->id;

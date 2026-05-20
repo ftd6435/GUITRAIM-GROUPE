@@ -10,6 +10,7 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     site_name: '',
     logo: '',
+    logo_path: '',
     address: '',
     phone: '',
     email: '',
@@ -39,6 +40,7 @@ const Settings = () => {
           ...prev,
           site_name: data.site_name || '',
           logo: data.logo || '',
+          logo_path: data.logo_path || '',
           address: data.address || '',
           phone: data.phone || '',
           email: data.email || '',
@@ -115,6 +117,7 @@ const Settings = () => {
           ...prev,
           site_name: response.data.site_name || '',
           logo: response.data.logo || '',
+          logo_path: response.data.logo_path || '',
           address: response.data.address || '',
           phone: response.data.phone || '',
           email: response.data.email || '',
@@ -149,7 +152,10 @@ const Settings = () => {
     );
   }
 
-  const currentLogoUrl = logoPreviewUrl || (settings.logo ? `/storage/images/settings/${settings.logo}` : null);
+  const currentLogoUrl =
+    logoPreviewUrl ||
+    settings.logo_path ||
+    (settings.logo ? `/storage/images/settings/${settings.logo}` : null);
 
   return (
     <div className="space-y-6">

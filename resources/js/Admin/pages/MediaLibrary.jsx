@@ -80,7 +80,9 @@ const MediaLibrary = () => {
   };
 
   const getFileUrl = (item) => {
-    if (!item?.file_url) return '';
+    if (!item) return '';
+    if (item.file_path) return item.file_path;
+    if (!item.file_url) return '';
     return `/storage/files/library/${item.file_url}`;
   };
 
@@ -92,7 +94,8 @@ const MediaLibrary = () => {
   };
 
   const copyToClipboard = (url, id) => {
-    navigator.clipboard.writeText(window.location.origin + url);
+    const isAbsolute = typeof url === 'string' && /^https?:\/\//i.test(url);
+    navigator.clipboard.writeText(isAbsolute ? url : (window.location.origin + url));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };

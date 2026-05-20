@@ -50,7 +50,7 @@ const Testimonials = () => {
         avatar: null,
         is_visible: !!testimonial.is_visible
       });
-      setPreviewUrl(testimonial.avatar ? `/storage/images/avatars/${testimonial.avatar}` : null);
+      setPreviewUrl(testimonial.avatar_path || (testimonial.avatar ? `/storage/images/avatars/${testimonial.avatar}` : null));
     } else {
       setEditingTestimonial(null);
       setFormData({ name: '', company: '', content: '', rating: 5, avatar: null, is_visible: true });
@@ -191,7 +191,7 @@ const Testimonials = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[hsla(210,25%,98%,1)] flex items-center justify-center border border-[#E0E6ED] overflow-hidden">
                           {testimonial.avatar ? (
-                            <img src={`/storage/images/avatars/${testimonial.avatar}`} alt="" className="w-full h-full object-cover" />
+                            <img src={testimonial.avatar_path || `/storage/images/avatars/${testimonial.avatar}`} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <User className="text-[hsla(210,15%,55%,1)]" size={20} />
                           )}

@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\MediaLibrary;
 use App\Traits\ApiResponses;
-use App\Traits\ImageUpload;
+use App\Traits\CloudflareUpload;
 use Illuminate\Http\Request;
 
 class MediaController extends Controller
 {
-    use ApiResponses, ImageUpload;
+    use ApiResponses, CloudflareUpload;
 
     public function index()
     {
@@ -28,7 +28,7 @@ class MediaController extends Controller
         $extension = $file->getClientOriginalExtension();
         $fileType = $this->getFileType($extension);
 
-        $fileName = $this->fileUpload($file, 'library');
+        $fileName = $this->uploadFile($file, 'library');
 
         $media = MediaLibrary::create([
             'file_name' => $file->getClientOriginalName(),

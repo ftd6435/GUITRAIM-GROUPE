@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\CloudflareUpload;
 use Illuminate\Database\Eloquent\Model;
 
 class Partner extends Model
 {
+    use CloudflareUpload;
+
     protected $fillable = ['is_visible', 'name', 'logo', 'website_url', 'is_featured', 'created_by', 'updated_by'];
 
     protected $appends = ['logo_path'];
@@ -17,7 +20,7 @@ class Partner extends Model
 
     public function getLogoPathAttribute()
     {
-        return $this->logo ? asset('storage/images/partners/'.$this->logo) : null;
+        return $this->logo ? $this->getImageUrl($this->logo, 'partners') : null;
     }
 
     public function createdBy()

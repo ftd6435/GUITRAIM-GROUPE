@@ -7,12 +7,16 @@ import { Card, CardContent } from '../../Components/ui/Card';
 import LoadingSpinner from '../../Components/ui/LoadingSpinner';
 import { Input } from '../../Components/ui/Input';
 import { cn } from '../../utils/utils';
+import ConfirmModal from '../../Components/ui/ConfirmModal';
 
 const BlogComments = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all | approved | pending
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchComments = async () => {
     try {
@@ -55,12 +59,22 @@ const BlogComments = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer ce commentaire ?')) return;
+  const handleDeleteClick = (id) => {
+    setCommentToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!commentToDelete) return;
+    setDeleting(true);
     try {
-      await api.delete(`/blog-comments/${id}`);
+      await api.delete(`/blog-comments/${commentToDelete}`);
+      setIsConfirmOpen(false);
+      setCommentToDelete(null);
       fetchComments();
     } catch (e) {
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -176,7 +190,7 @@ const BlogComments = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(comment.id)}
+                        onClick={() => handleDeleteClick(comment.id)}
                         className="text-[#D64545] hover:bg-[#D64545]/10"
                         title="Supprimer"
                       >
@@ -198,6 +212,17 @@ const BlogComments = () => {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer le commentaire"
+        message="Cette action est irréversible. Supprimer ce commentaire ?"
+        confirmText={deleting ? 'Suppression...' : 'Supprimer'}
+        cancelText="Annuler"
+        loading={deleting}
+      />
     </div>
   );
 };

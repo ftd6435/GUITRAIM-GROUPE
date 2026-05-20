@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HardHat, Home as HomeIcon, Truck, Monitor, CheckCircle2, ArrowRight, Download, Mail, Loader2 } from 'lucide-react';
 import Button from '../../Components/ui/Button';
+import Modal from '../../Components/ui/Modal';
 import { cn } from '../../utils/utils';
 import Reveal from '../components/Reveal';
 import api from '../../utils/api';
@@ -11,8 +12,9 @@ const Services = () => {
   const [sectors, setSectors] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedServices, setExpandedServices] = useState({});
   const [page, setPage] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -150,9 +152,25 @@ const Services = () => {
     });
   }, [sectors, services]);
 
-  const toggleService = (serviceId) => {
-    setExpandedServices((prev) => ({ ...prev, [serviceId]: !prev[serviceId] }));
+  const openServiceDetails = (service) => {
+    if (!service?.content) return;
+    setSelectedService(service);
+    setIsServiceModalOpen(true);
   };
+
+  const closeServiceDetails = () => {
+    setIsServiceModalOpen(false);
+    setSelectedService(null);
+  };
+
+  useEffect(() => {
+    if (!isServiceModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeServiceDetails();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isServiceModalOpen]);
 
   return (
     <div className="pb-24">
@@ -238,7 +256,6 @@ const Services = () => {
                   <div className="space-y-3">
                     {sector.services.map((service) => {
                       const hasContent = !!service?.content;
-                      const isExpanded = !!expandedServices[service.id];
                       return (
                         <div
                           key={service.id}
@@ -258,20 +275,13 @@ const Services = () => {
                             {hasContent ? (
                               <button
                                 type="button"
-                                onClick={() => toggleService(service.id)}
+                                onClick={() => openServiceDetails(service)}
                                 className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold border border-[#E0E6ED] bg-[hsla(210,25%,98%,1)] text-[#1A3A5C] hover:border-[#1A3A5C] transition-colors"
                               >
-                                {isExpanded ? 'Masquer' : 'Voir détails'}
+                                Voir détails
                               </button>
                             ) : null}
                           </div>
-
-                          {hasContent && isExpanded ? (
-                            <div
-                              className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed pt-2 border-t border-[#E0E6ED] [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-[#4A8BC2] [&_a]:font-bold"
-                              dangerouslySetInnerHTML={{ __html: service.content }}
-                            />
-                          ) : null}
                         </div>
                       );
                     })}
@@ -341,6 +351,43 @@ const Services = () => {
           </div>
         </div>
       </section>
+
+      <Modal
+        isOpen={isServiceModalOpen}
+        onClose={closeServiceDetails}
+        title={selectedService?.title || 'Détails du service'}
+        className="max-w-4xl"
+      >
+        {selectedService?.description ? (
+          <p className="text-sm font-medium text-[hsla(210,20%,40%,1)] leading-relaxed">
+            {selectedService.description}
+          </p>
+        ) : null}
+
+        {selectedService?.content ? (
+          <div
+            className={cn(
+              "mt-6 text-sm font-medium leading-relaxed break-words overflow-hidden text-[hsla(210,20%,40%,1)]",
+              "[&_p]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[#1A3A5C] [&_h1]:mb-4",
+              "[&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[#1A3A5C] [&_h2]:mb-3",
+              "[&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-[#1A3A5C] [&_h3]:mb-3",
+              "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-2",
+              "[&_a]:text-[#4A8BC2] [&_a]:font-bold [&_a]:break-words",
+              "[&_blockquote]:border-l-4 [&_blockquote]:border-[#4A8BC2] [&_blockquote]:pl-5 [&_blockquote]:py-2 [&_blockquote]:my-6",
+              "[&_pre]:overflow-x-auto [&_pre]:p-4 [&_pre]:rounded-2xl [&_pre]:bg-[hsla(210,25%,98%,1)]",
+              "[&_code]:break-words",
+              "[&_table]:block [&_table]:w-full [&_table]:overflow-x-auto",
+              "[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_img]:border [&_img]:border-[#E0E6ED]",
+              "[&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-2xl [&_iframe]:border [&_iframe]:border-[#E0E6ED]"
+            )}
+            dangerouslySetInnerHTML={{ __html: selectedService.content }}
+          />
+        ) : (
+          <div className="text-sm font-medium text-[hsla(210,20%,40%,1)]">
+            Aucun détail disponible.
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

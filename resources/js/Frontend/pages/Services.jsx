@@ -338,10 +338,6 @@ const Services = () => {
                 <span>Demander une Consultation</span>
               </Button>
             </Link>
-            <Button variant="secondary" className="w-full sm:w-auto h-auto min-h-[4rem] py-3 px-4 sm:px-12 rounded-[24px] bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-bold text-base sm:text-lg gap-3">
-              <Download size={24} className="shrink-0" />
-              <span>Télécharger Notre Brochure</span>
-            </Button>
           </div>
         </div>
       </section>

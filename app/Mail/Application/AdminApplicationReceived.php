@@ -48,22 +48,18 @@ class AdminApplicationReceived extends Mailable implements ShouldQueue
 
         if ($this->application->cv_file) {
             $cvPath = 'files/applications/cvs/' . $this->application->cv_file;
-            if (! Storage::disk('public')->exists($cvPath)) {
-                return $attachments;
+            if (Storage::disk('r2')->exists($cvPath)) {
+                $attachments[] = Attachment::fromStorageDisk('r2', $cvPath)
+                    ->as('CV-' . $this->application->first_name . '-' . $this->application->last_name . '.' . pathinfo($this->application->cv_file, PATHINFO_EXTENSION));
             }
-            $attachments[] = Attachment::fromPath(
-                Storage::disk('public')->path($cvPath)
-            )->as('CV-' . $this->application->first_name . '-' . $this->application->last_name . '.' . pathinfo($this->application->cv_file, PATHINFO_EXTENSION));
         }
 
         if ($this->application->cover_letter_file) {
             $letterPath = 'files/applications/letters/' . $this->application->cover_letter_file;
-            if (! Storage::disk('public')->exists($letterPath)) {
-                return $attachments;
+            if (Storage::disk('r2')->exists($letterPath)) {
+                $attachments[] = Attachment::fromStorageDisk('r2', $letterPath)
+                    ->as('LettreMotivation-' . $this->application->first_name . '-' . $this->application->last_name . '.' . pathinfo($this->application->cover_letter_file, PATHINFO_EXTENSION));
             }
-            $attachments[] = Attachment::fromPath(
-                Storage::disk('public')->path($letterPath)
-            )->as('LettreMotivation-' . $this->application->first_name . '-' . $this->application->last_name . '.' . pathinfo($this->application->cover_letter_file, PATHINFO_EXTENSION));
         }
 
         return $attachments;

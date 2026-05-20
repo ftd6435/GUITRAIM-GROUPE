@@ -92,7 +92,11 @@ class ApplicationController extends Controller
             );
         }
 
-        Mail::to($application->email)->later(now()->addSeconds(10), new ApplicantApplicationConfirmation($application));
+        try {
+            Mail::to($application->email)->queue(new ApplicantApplicationConfirmation($application));
+        } catch (\Throwable $e) {
+            Mail::to($application->email)->send(new ApplicantApplicationConfirmation($application));
+        }
 
         return $this->successResponse($application->load(['job', 'createdBy', 'updatedBy']), 'Candidature envoyée avec succès', 201);
     }

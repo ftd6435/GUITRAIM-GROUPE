@@ -13,32 +13,32 @@ const queryClient = new QueryClient({
 });
 
 // Admin Imports
-import AdminLayout from "./Admin/layouts/AdminLayout";
-import Dashboard from "./Admin/pages/Dashboard";
-import Sectors from "./Admin/pages/Sectors";
-import Services from "./Admin/pages/Services";
-import Projects from "./Admin/pages/Projects";
-import Articles from "./Admin/pages/Articles";
-// import BlogComments from "./Admin/pages/BlogComments";
-import Categories from "./Admin/pages/Categories";
-import Tags from "./Admin/pages/Tags";
-import MediaLibrary from "./Admin/pages/MediaLibrary";
-import Jobs from "./Admin/pages/Jobs";
-import Applications from "./Admin/pages/Applications";
-import Contacts from "./Admin/pages/Contacts";
-import Settings from "./Admin/pages/Settings";
-import Team from "./Admin/pages/Team";
-import Testimonials from "./Admin/pages/Testimonials";
-import Partners from "./Admin/pages/Partners";
-import Pages from "./Admin/pages/Pages";
-import Newsletter from "./Admin/pages/Newsletter";
-import Users from "./Admin/pages/Users";
-import Profile from "./Admin/pages/Profile";
-import Login from "./Admin/pages/Login";
-import Clients from "./Admin/pages/Clients";
-import Quotes from "./Admin/pages/Quotes";
-import Invoices from "./Admin/pages/Invoices";
-import CrmDashboard from "./Admin/pages/CrmDashboard";
+import AdminLayout from "./admin/layouts/AdminLayout";
+import Dashboard from "./admin/pages/Dashboard";
+import Sectors from "./admin/pages/Sectors";
+import Services from "./admin/pages/Services";
+import Projects from "./admin/pages/Projects";
+import Articles from "./admin/pages/Articles";
+import BlogComments from "./admin/pages/BlogComments";
+import Categories from "./admin/pages/Categories";
+import Tags from "./admin/pages/Tags";
+import MediaLibrary from "./admin/pages/MediaLibrary";
+import Jobs from "./admin/pages/Jobs";
+import Applications from "./admin/pages/Applications";
+import Contacts from "./admin/pages/Contacts";
+import Settings from "./admin/pages/Settings";
+import Team from "./admin/pages/Team";
+import Testimonials from "./admin/pages/Testimonials";
+import Partners from "./admin/pages/Partners";
+import Pages from "./admin/pages/Pages";
+import Newsletter from "./admin/pages/Newsletter";
+import Users from "./admin/pages/Users";
+import Profile from "./admin/pages/Profile";
+import Login from "./admin/pages/Login";
+import Clients from "./admin/pages/Clients";
+import Quotes from "./admin/pages/Quotes";
+import Invoices from "./admin/pages/Invoices";
+import CrmDashboard from "./admin/pages/CrmDashboard";
 
 // Frontend Imports (To be created)
 import Home from "./Frontend/pages/Home";
